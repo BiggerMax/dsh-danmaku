@@ -22,7 +22,17 @@ export const DEFAULT_SETTINGS: DanmakuSettings = {
 export type SettingsStore = SnapshotStore<DanmakuSettings>
 
 export function createSettingsStore(): SettingsStore {
-  return createSnapshotStore<DanmakuSettings>(DEFAULT_SETTINGS, {
+  const store = createSnapshotStore<DanmakuSettings>(DEFAULT_SETTINGS, {
     persist: { name: 'dsh.trajectory-danmaku.settings' },
   })
+  // 兼容旧持久化值（缺 pos / speed / maxActive 时补默认值）
+  const cur = store.getSnapshot()
+  if (!cur.pos || cur.speed == null || cur.maxActive == null) {
+    store.update((d) => {
+      if (!d.pos) d.pos = DEFAULT_SETTINGS.pos
+      if (d.speed == null) d.speed = DEFAULT_SETTINGS.speed
+      if (d.maxActive == null) d.maxActive = DEFAULT_SETTINGS.maxActive
+    })
+  }
+  return store
 }

@@ -142,6 +142,7 @@ const cases = [
   ['tool 失败', simulate({ seq: 6, type: 'tool/result', time: 6, data: { turn: 1, step: 2, callId: 'c2', message: { id: 'r2', role: 'user', content: [], source: { kind: 'tool', callId: 'c2' } }, error: { name: 'Error', code: 'EACCES' } } }), (i) => i?.tone === 'error' && i.text.includes('EACCES')],
   ['assistant 回复', simulate({ seq: 7, type: 'assistant/message', time: 7, data: { turn: 1, step: 2, message: { id: 'a1', role: 'assistant', content: [{ type: 'text', text: '完成' }], source: { kind: 'model', provider: 'x', model: 'y' } } } }), (i) => i?.kind === 'assistant'],
   ['turn 结束成功', simulate({ seq: 8, type: 'turn/end', time: 8, data: { turn: 1, reason: { kind: 'complete' } } }), (i) => i?.tone === 'ok'],
+  ['turn 2 开始', simulate({ seq: 8.5, type: 'turn/start', time: 8.5, data: { turn: 2 } }), (i) => i?.text.includes('第 2 轮开始')],
   ['turn 结束失败', simulate({ seq: 9, type: 'turn/end', time: 9, data: { turn: 2, reason: { kind: 'error', error: { name: 'LlmFailure', message: '超时' } } } }), (i) => i?.tone === 'error' && i.text.includes('⚠️')],
 ]
 

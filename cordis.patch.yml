@@ -1,0 +1,4 @@
+# dsh-trajectory-danmaku bundle patch
+- insert:
+    - id: trajectory-danmaku
+      name: '@dsh-external/dsh-trajectory-danmaku'

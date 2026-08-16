@@ -118,7 +118,9 @@ const danmakuToolResultDefinition: ConversationNodeDefinition = {
   target: 'danmaku',
   match: (event) => {
     if (event.type !== 'tool/result') return null
-    return { id: `tool-result:${event.data.callId}`, role: 'start' }
+    const callId = event.data.callId
+    if (!callId) return null
+    return { id: `tool-result:${callId}`, role: 'start' }
   },
   start: (_context, match) => {
     if (match.event.type !== 'tool/result') throw new Error('danmaku-tool-result start requires tool/result')
@@ -154,13 +156,16 @@ const danmakuTurnDefinition: ConversationNodeDefinition = {
   target: 'danmaku',
   match: (event) => {
     if (event.type === 'turn/start') return { id: `turn:${event.data.turn}`, role: 'start' }
-    if (event.type === 'turn/end') return { id: `turn-end:${event.data.turn}`, role: 'start' }
+    if (event.type === 'turn/end') return { id: `turn:${event.data.turn}`, role: 'update' }
     return null
   },
   start: (_context, match) => {
     if (match.event.type === 'turn/start') {
       return { kind: 'start' as const, turn: match.event.data.turn, time: match.event.time }
     }
+    throw new Error('danmaku-turn start requires turn/start')
+  },
+  update: (context, match) => {
     if (match.event.type === 'turn/end') {
       const reason = match.event.data.reason
       return {
@@ -171,9 +176,8 @@ const danmakuTurnDefinition: ConversationNodeDefinition = {
         errorMsg: reason.kind === 'error' ? reason.error?.message ?? '未知错误' : undefined,
       }
     }
-    throw new Error('danmaku-turn start requires turn/start or turn/end')
+    return context.state
   },
-  update: (context) => context.state,
   buildViewNode: (context) => {
     const state = context.state as
       | { kind: 'start'; turn: number; time: number }

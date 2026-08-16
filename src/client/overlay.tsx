@@ -115,14 +115,15 @@ export function DanmakuOverlay({ bus, settings }: { bus: DanmakuBus; settings: S
     useCallback((cb: () => void) => settings.subscribe(cb), [settings]),
     useCallback(() => settings.getSnapshot(), [settings]),
   )
+  const speed = snap.speed ?? 150
+  const maxActive = snap.maxActive ?? 40
 
   const [items, setItems] = useState<ActiveDanmaku[]>([])
   const laneEndsTopRef = useRef<number[]>(Array(LANE_COUNT_PER_BAND).fill(0))
   const laneEndsBotRef = useRef<number[]>(Array(LANE_COUNT_PER_BAND).fill(0))
   const enabledRef = useRef(snap.enabled)
   enabledRef.current = snap.enabled
-  const maxActiveRef = useRef(snap.maxActive)
-  maxActiveRef.current = snap.maxActive
+  maxActiveRef.current = maxActive
 
   useEffect(() => {
     return bus.subscribe((item: DanmakuItem) => {
@@ -140,7 +141,7 @@ export function DanmakuOverlay({ bus, settings }: { bus: DanmakuBus; settings: S
 
       const estWidth = 28 + item.text.length * 14.5
       const distance = window.innerWidth + estWidth + 80
-      const duration = (distance / snap.speed) * 1000
+      const duration = (distance / speed) * 1000
       laneEnds[lane] = now + duration
 
       const active: ActiveDanmaku = { ...item, band, lane, duration }
@@ -152,7 +153,7 @@ export function DanmakuOverlay({ bus, settings }: { bus: DanmakuBus; settings: S
         return [...prev, active]
       })
     })
-  }, [bus, snap.speed])
+  }, [bus, speed])
 
   const handleAnimationEnd = useCallback((id: string) => {
     setItems((prev) => prev.filter((p) => p.id !== id))
@@ -192,11 +193,12 @@ export function DanmakuOverlay({ bus, settings }: { bus: DanmakuBus; settings: S
 // ─── 可拖拽控制面板 ───────────────────────────────────────────────────
 
 function ControlPanel({ settings, snap }: { settings: SettingsStore; snap: ReturnType<SettingsStore['getSnapshot']> }) {
-  const [pos, setPos] = useState({ top: snap.pos.top, left: snap.pos.left })
+  const safePos = snap.pos ?? { top: 16, left: 300 }
+  const [pos, setPos] = useState({ top: safePos.top, left: safePos.left })
   const [dragging, setDragging] = useState(false)
   const dragRef = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null)
 
-  useEffect(() => { if (!dragging) setPos(snap.pos) }, [snap.pos, dragging])
+  useEffect(() => { if (!dragging) setPos(safePos) }, [safePos, dragging])
 
   const handleDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const t = e.target as HTMLElement
@@ -252,11 +254,11 @@ function ControlPanel({ settings, snap }: { settings: SettingsStore; snap: Retur
         min={60}
         max={350}
         step={10}
-        value={snap.speed}
+        value={snap.speed ?? 150}
         onChange={handleSpeed}
         title="滚动速度"
       />
-      <span className="dsh-danmaku-speed-label">{snap.speed}px/s</span>
+      <span className="dsh-danmaku-speed-label">{snap.speed ?? 150}px/s</span>
     </div>
   )
 }
