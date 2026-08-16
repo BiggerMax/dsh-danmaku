@@ -2,7 +2,7 @@
 /**
  * 弹幕插件自检脚本（无浏览器依赖）：
  *  1. 加载 lib/client.js（模拟 ModuleLoader 环境）
- *  2. 执行 apply() 验证注册（5 定义 + danmaku 视图 + shell.overlay 槽位）
+ *  2. 执行 apply() 验证注册（5 定义 + danmaku 视图 + 弹幕层挂载到 body）
  *  3. 模拟事件流经定义，验证弹幕项生成与过滤逻辑
  *
  * 用法：node scripts/smoke-test.mjs（构建后运行）
@@ -27,16 +27,33 @@ const reactStub = {
 }
 const loaderState = { loaded: null }
 const moduleLoader = { load: (spec) => { loaderState.loaded = spec } }
+const makeElement = () => ({
+  dataset: {}, style: {}, classList: { add: () => {}, remove: () => {} },
+  textContent: '', innerHTML: '',
+  appendChild: () => {}, remove: () => {},
+  addEventListener: () => {}, removeEventListener: () => {},
+  setAttribute: () => {},
+})
+const bodyChildren = []
 const sandbox = {
-  window: { __ModuleLoader__: moduleLoader },
+  window: {
+    __ModuleLoader__: moduleLoader,
+    innerWidth: 1280,
+    innerHeight: 800,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  },
   __ModuleLoader__: moduleLoader,
   document: {
     head: { appendChild: () => {} },
-    createElement: () => ({ dataset: {}, style: {}, textContent: '' }),
+    body: { appendChild: (el) => { bodyChildren.push(el?.className ?? el?.id ?? el) } },
+    createElement: () => makeElement(),
+    getElementById: () => null,
     querySelector: () => null,
   },
   performance: { now: () => Date.now() },
   localStorage: { getItem: () => null, setItem: () => {} },
+  setTimeout: () => {},
   require: (id) => {
     const table = {
       'react': reactStub,
@@ -79,26 +96,11 @@ console.log('✓ 模块导出 =', Object.keys(mod), '| inject =', JSON.stringify
 
 // ─── 2. 验证 apply() 注册 ─────────────────────────────────────────
 const defs = []
-const registered = { views: [], slots: [] }
+const registered = { views: [] }
 const ctx = {
   effect: (fn) => fn(),
   conversationEvents: { register: (def) => { defs.push(def); return () => {} } },
   conversationViews: { register: (def) => { registered.views.push(def.target); return () => {} } },
-  slots: {
-    inject: (slot, factory) => {
-      const record = { slot, opts: null }
-      registered.slots.push(record)
-      const disposer = factory()
-      record.disposer = disposer
-      return disposer
-    },
-    register: (opts, comp) => {
-      const record = registered.slots[registered.slots.length - 1]
-      record.opts = opts
-      record.comp = comp
-      return () => {}
-    },
-  },
 }
 mod.apply(ctx)
 
@@ -107,9 +109,8 @@ for (const kind of expectKinds) {
   if (!defs.some((d) => d.kind === kind)) { console.error(`FAIL: 缺少定义 ${kind}`); process.exit(1) }
 }
 if (registered.views.length !== 1 || registered.views[0] !== 'danmaku') { console.error('FAIL: 视图注册错误'); process.exit(1) }
-const overlay = registered.slots.find((s) => s.slot === 'shell.overlay')
-if (!overlay || overlay.opts.id !== 'dsh-trajectory-danmaku') { console.error('FAIL: shell.overlay 槽位注册错误'); process.exit(1) }
-console.log('✓ apply 注册 5 定义 + 视图 danmaku + 槽位 shell.overlay')
+if (!bodyChildren.includes('dsh-danmaku-layer')) { console.error('FAIL: 弹幕层未挂载到 document.body'); process.exit(1) }
+console.log('✓ apply 注册 5 定义 + 视图 danmaku + 弹幕层挂载到 body')
 
 // ─── 3. 模拟事件流验证弹幕生成 ────────────────────────────────────
 const seen = new Map()

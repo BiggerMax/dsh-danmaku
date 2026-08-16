@@ -26,10 +26,11 @@ Session 轨迹事件 → Node Definitions → DanmakuBus → overlay.tsx (shell.
 
 ## 控制面板
 
-右上角胶囊形控件：
+右上角胶囊形控件（可拖拽）：
 
-- **弹幕 开/关**：一键切换总开关
+- **弹幕开关**：精致的滑动开关，一键切换总开关（开启时绿色渐变 + 辉光）
 - **速度滑块**：60–350 px/s，实时调节滚动速度
+- **贴边自动收纳**：拖到屏幕边缘 48px 内松手即贴边收起为小标签，悬停/点击自动展开；位置与收纳状态持久化到 localStorage
 
 设置持久化到 `localStorage`（key: `dsh.trajectory-danmaku.settings`）。
 
