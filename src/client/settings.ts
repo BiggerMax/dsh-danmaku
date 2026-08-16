@@ -8,12 +8,15 @@ export interface DanmakuSettings {
   speed: number
   /** 最大并发弹幕数。 */
   maxActive: number
+  /** 控制面板位置（拖拽持久化）。 */
+  pos: { top: number; left: number }
 }
 
 export const DEFAULT_SETTINGS: DanmakuSettings = {
   enabled: true,
   speed: 150,
   maxActive: 40,
+  pos: { top: 16, left: 300 },
 }
 
 export type SettingsStore = SnapshotStore<DanmakuSettings>
