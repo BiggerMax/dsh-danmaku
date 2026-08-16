@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import type { UserConfig } from 'tsdown'
 
-const PLUGIN_ID = '@dsh-external/dsh-trajectory-danmaku'
+const PLUGIN_ID = 'dsh-danmaku'
 
 const clientBundle: UserConfig = {
   entry: { client: 'src/client/index.tsx' },

@@ -1,5 +1,5 @@
 /**
- * @dsh-external/dsh-trajectory-danmaku — client 入口（纯原生 DOM，不依赖 React）。
+ * dsh-danmaku — client 入口（纯原生 DOM，不依赖 React）。
  *
  * 注册轨迹事件定义 + 弹幕视图 + 直接挂载到 body 的弹幕层。
  * 构建：tsdown，产物 lib/client.js。bundle 直接返回 plugin 对象。
@@ -52,7 +52,7 @@ export function apply(ctx: ClientCtx): void {
     step('✓ danmaku 视图注册')
     const unmount = mountDanmakuOverlay(bus, settings)
     step('✓ 弹幕层挂载')
-    ctx.effect(() => unmount, 'dsh-trajectory-danmaku: overlay')
+    ctx.effect(() => unmount, 'dsh-danmaku: overlay')
     step('✓ effect 注册')
     hideDiag()
   } catch (e) {

@@ -1,4 +1,4 @@
-# @dsh-external/dsh-trajectory-danmaku
+# dsh-danmaku
 
 将 DeepSeek Harness **轨迹功能（trajectory）** 的输出以**弹幕**形式实时显示在对话页面中——工具调用、轮次切换、助手回复等事件会像视频弹幕一样从右向左飞过屏幕。
 
@@ -47,13 +47,13 @@ npm pack             # 打包 tgz
 **方式一：dev_inject_plugin（运行时注入，免重启）**
 
 ```bash
-dev_inject_plugin /path/to/dsh-trajectory-danmaku
+dev_inject_plugin /path/to/dsh-danmaku
 ```
 
 **方式二：dev_install_package（持久化到 bundles，重启后自动装配）**
 
 ```bash
-dev_install_package /path/to/dsh-trajectory-danmaku
+dev_install_package /path/to/dsh-danmaku
 ```
 
 注入后刷新页面即可看到弹幕效果。
@@ -68,7 +68,7 @@ dev_install_package /path/to/dsh-trajectory-danmaku
 ## 开发
 
 ```
-dsh-trajectory-danmaku/
+dsh-danmaku/
 ├── src/
 │   ├── index.ts              # host 半区（no-op）
 │   └── client/

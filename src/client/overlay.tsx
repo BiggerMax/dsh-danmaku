@@ -10,7 +10,7 @@ const LANE_COUNT = 6
 const LANE_HEIGHT = 28
 const TOP_GAP = 60
 const BOTTOM_GAP = 90
-const STYLE_ID = 'dsh-trajectory-danmaku-css'
+const STYLE_ID = 'dsh-danmaku-css'
 const SNAP_THRESHOLD = 48 // 拖到距屏幕边缘 48px 内 → 贴边自动收纳
 const CTRL_W = 210        // 控制条估算宽度（边缘判定用）
 const CTRL_H = 30         // 控制条估算高度（边缘判定用）
@@ -107,7 +107,7 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
 
   const container = document.createElement('div')
   container.className = 'dsh-danmaku-layer'
-  container.dataset.plugin = 'dsh-trajectory-danmaku'
+  container.dataset.plugin = 'dsh-danmaku'
   document.body.appendChild(container)
 
   const items: Array<{ el: HTMLDivElement }> = []
