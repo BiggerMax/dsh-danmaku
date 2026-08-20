@@ -19,7 +19,7 @@ export interface DanmakuFilters {
 }
 
 /** 弹幕样式主题。 */
-export type DanmakuTheme = 'classic' | 'neon' | 'cyber' | 'cinema' | 'mono'
+export type DanmakuTheme = 'classic' | 'neon' | 'cyber' | 'cinema' | 'mono' | 'battle'
 
 /** 弹幕密度（影响轨道数量）。 */
 export type DanmakuDensity = 'sparse' | 'normal' | 'dense'
@@ -62,13 +62,14 @@ export const DEFAULT_FILTERS: DanmakuFilters = {
   thinking: true,
 }
 
-export const ALL_THEMES: DanmakuTheme[] = ['classic', 'neon', 'cyber', 'cinema', 'mono']
+export const ALL_THEMES: DanmakuTheme[] = ['classic', 'neon', 'cyber', 'cinema', 'mono', 'battle']
 export const THEME_LABEL: Record<DanmakuTheme, string> = {
   classic: '经典',
   neon: '霓虹',
   cyber: '赛博朋克',
   cinema: '电影字幕',
   mono: '极简等宽',
+  battle: '战斗模式',
 }
 
 export const ALL_DENSITIES: DanmakuDensity[] = ['sparse', 'normal', 'dense']
@@ -145,7 +146,7 @@ export function createSettingsStore(): SettingsStore {
   function loadTheme(cur: unknown): DanmakuTheme {
     if (!cur || typeof cur !== 'object') return DEFAULT_THEME
     const raw = cur as Record<string, unknown>
-    const candidates: readonly DanmakuTheme[] = ['classic', 'neon', 'cyber', 'cinema', 'mono']
+    const candidates: readonly DanmakuTheme[] = ['classic', 'neon', 'cyber', 'cinema', 'mono', 'battle']
     for (const t of candidates) { if (raw.theme === t) return t }
     return DEFAULT_THEME
   }

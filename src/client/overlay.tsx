@@ -36,6 +36,7 @@ const THEME_EMOJI: Record<DanmakuTheme, string> = {
   'cyber': '🤖',
   'cinema': '🎬',
   'mono': '🔤',
+  'battle': '⚔️',
 }
 
 const LANE_HEIGHT = 28
@@ -166,6 +167,41 @@ function injectCss(): void {
 .dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-kind-subagent { color:#f59e0b; }
 .dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-tone-ok { color:#6ee7b7; }
 .dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-tone-error { color:#fca5a5; }
+
+/* ── 战斗模式：RPG HUD + 技能色彩 ── */
+.dsh-danmaku-layer[data-theme="battle"] { background:radial-gradient(ellipse at center, rgba(20,10,40,0.08), transparent 65%); }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-item {
+  background:linear-gradient(135deg,rgba(30,15,60,0.94),rgba(8,12,30,0.94));
+  border:1px solid rgba(250,204,21,0.62); border-radius:5px;
+  font-family:ui-monospace,"SFMono-Regular",monospace; letter-spacing:.3px;
+  box-shadow:0 0 10px rgba(250,204,21,.18), inset 0 0 12px rgba(99,102,241,.12);
+  text-shadow:0 0 5px currentColor;
+}
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-kind-tool-call { border-color:#60a5fa; color:#bfdbfe; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-kind-tool-result.dsh-danmaku-tone-ok { border-color:#34d399; color:#a7f3d0; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-kind-subagent { border-color:#c084fc; color:#e9d5ff; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-kind-thinking { border-color:#818cf8; color:#c7d2fe; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-tone-error { border-color:#fb7185; color:#fecdd3; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-read { border-left:4px solid #38bdf8; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-search { border-left:4px solid #a78bfa; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-edit { border-left:4px solid #facc15; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-shell { border-left:4px solid #4ade80; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-web { border-left:4px solid #22d3ee; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-git { border-left:4px solid #fb923c; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-package { border-left:4px solid #f472b6; }
+.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-flow { border-left:4px solid #c084fc; }
+.dsh-danmaku-effect-combo { animation:dsh-danmaku-slide var(--danmaku-duration) linear both, dsh-danmaku-combo-pulse .7s ease-in-out infinite; }
+@keyframes dsh-danmaku-combo-pulse { 50% { transform:scale(1.08); filter:brightness(1.35); } }
+.dsh-danmaku-celebration {
+  position:fixed; inset:0; z-index:1003; pointer-events:none; display:flex; align-items:center; justify-content:center;
+  font-size:clamp(28px,6vw,72px); font-weight:900; letter-spacing:2px; text-shadow:0 0 18px currentColor;
+  animation:dsh-danmaku-celebrate-in 2.2s ease-out forwards;
+}
+.dsh-danmaku-celebration.victory { color:#facc15; }
+.dsh-danmaku-celebration.defeat { color:#fb7185; }
+@keyframes dsh-danmaku-celebrate-in { 0% { opacity:0; transform:scale(.6); } 12% { opacity:1; transform:scale(1.08); } 24% { transform:scale(1); } 78% { opacity:1; } 100% { opacity:0; transform:scale(1.15); } }
+.dsh-danmaku-particle { position:fixed; width:7px; height:7px; border-radius:50%; animation:dsh-danmaku-particle-fly 1.5s ease-out forwards; }
+@keyframes dsh-danmaku-particle-fly { from { opacity:1; transform:translate(0,0) scale(1); } to { opacity:0; transform:translate(var(--dx),var(--dy)) rotate(360deg) scale(.2); } }
 
 @keyframes dsh-danmaku-slide { from { transform:translateX(100vw); } to { transform:translateX(-110%); } }
 @keyframes dsh-danmaku-slide-ltr { from { transform:translateX(-110%); } to { transform:translateX(100vw); } }
@@ -966,6 +1002,27 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       || (el as HTMLElement).isContentEditable)
   }
 
+  function celebrate(effect: 'victory' | 'defeat'): void {
+    const banner = document.createElement('div')
+    banner.className = `dsh-danmaku-celebration ${effect}`
+    banner.textContent = effect === 'victory' ? '🏆 VICTORY!' : '💥 DEFEAT'
+    document.body.appendChild(banner)
+    if (effect === 'victory') {
+      const colors = ['#facc15', '#34d399', '#60a5fa', '#f472b6', '#c084fc']
+      for (let i = 0; i < 28; i++) {
+        const p = document.createElement('i')
+        p.className = 'dsh-danmaku-particle'
+        p.style.left = '50%'; p.style.top = '50%'
+        p.style.background = colors[i % colors.length]
+        p.style.setProperty('--dx', `${Math.round(Math.cos(i / 28 * Math.PI * 2) * (120 + Math.random() * 260))}px`)
+        p.style.setProperty('--dy', `${Math.round(Math.sin(i / 28 * Math.PI * 2) * (90 + Math.random() * 220))}px`)
+        document.body.appendChild(p)
+        setTimeout(() => p.remove(), 1700)
+      }
+    }
+    setTimeout(() => banner.remove(), 2400)
+  }
+
   window.addEventListener('keydown', (e) => {
     if (detailPanel) return // 详情面板打开时交给面板的 handler
     if (isInputFocused()) return // 输入框中不拦截
@@ -1004,7 +1061,8 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
         : fkey === 'toolCall' ? snap.filters.toolCall
         : fkey === 'toolResult' ? snap.filters.toolResult
         : fkey === 'turn' ? snap.filters.turn
-        : snap.filters.subagent
+        : fkey === 'subagent' ? snap.filters.subagent
+        : snap.filters.thinking
     if (!visible) return
     // 区域：full 随机上下，top 仅顶部，bottom 仅底部
     let band: 'top' | 'bottom'
@@ -1039,6 +1097,8 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     el.className = 'dsh-danmaku-item'
     if (item.tone !== 'neutral') el.classList.add('dsh-danmaku-tone-' + item.tone)
     el.classList.add('dsh-danmaku-kind-' + item.kind)
+    if (item.effect) el.classList.add('dsh-danmaku-effect-' + item.effect)
+    if (item.toolName) el.dataset.tool = item.toolName
     if (reversed) el.classList.add('dsh-danmaku-dir-ltr')
     // 文字包裹在 span 中（霓虹主题用 background-clip:text）
     const span = document.createElement('span')
@@ -1055,6 +1115,7 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     } else if (item.tone === 'error' && item.kind === 'tool-result') {
       notify('❌ 工具调用失败', item.text)
     }
+    if (item.effect === 'victory' || item.effect === 'defeat') celebrate(item.effect)
     el.addEventListener('animationend', (e) => {
       // 只响应滑动动画结束；霓虹发光、错误脉冲等 infinite 循环每次循环结束也会触发 animationend，
       // 若不对 animationName 做白名单判断，弹幕会被立即移除

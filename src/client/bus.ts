@@ -13,6 +13,8 @@ export class DanmakuBus {
   // 弹幕历史（最近 500 条）
   private readonly history: DanmakuItem[] = []
   private readonly MAX_HISTORY = 500
+  private comboStreak = 0
+  private comboTimer: ReturnType<typeof setTimeout> | null = null
 
   setThemeGetter(fn: () => DanmakuTheme): void {
     this.themeGetter = fn
@@ -43,6 +45,29 @@ export class DanmakuBus {
 
     this.record(themed)
     for (const listener of [...this.listeners]) listener(themed)
+    this.updateCombo(themed)
+  }
+
+  private updateCombo(item: DanmakuItem): void {
+    if (item.kind !== 'tool-result') return
+    if (item.tone === 'ok') {
+      this.comboStreak++
+      if (this.comboTimer) clearTimeout(this.comboTimer)
+      this.comboTimer = setTimeout(() => { this.comboStreak = 0 }, 3000)
+      if (this.comboStreak >= 3) {
+        const combo: DanmakuItem = {
+          id: `combo:${item.id}:${this.comboStreak}`,
+          text: `🔥 工具连击 ×${this.comboStreak}`,
+          kind: 'turn', tone: 'ok', time: item.time,
+          effect: 'combo', combo: this.comboStreak,
+        }
+        this.record(combo)
+        for (const listener of [...this.listeners]) listener(combo)
+      }
+    } else {
+      this.comboStreak = 0
+      if (this.comboTimer) { clearTimeout(this.comboTimer); this.comboTimer = null }
+    }
   }
 
   private record(item: DanmakuItem): void {
@@ -71,6 +96,7 @@ export class DanmakuBus {
         : item
     this.record(coalesced)
     for (const listener of [...this.listeners]) listener(coalesced)
+    this.updateCombo(coalesced)
   }
 
   subscribe(listener: DanmakuListener): () => void {
@@ -81,6 +107,8 @@ export class DanmakuBus {
   destroy(): void {
     for (const [, entry] of this.pending) clearTimeout(entry.timer)
     this.pending.clear()
+    if (this.comboTimer) clearTimeout(this.comboTimer)
+    this.comboTimer = null
     this.listeners.clear()
   }
 }

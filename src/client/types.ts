@@ -16,6 +16,12 @@ export interface DanmakuItem {
   readonly durationMs?: number
   /** 渲染时使用的主题（可选，由总线注入）。 */
   readonly theme?: DanmakuTheme
+  /** 工具语义，用于工具专属视觉效果。 */
+  readonly toolName?: string
+  /** 渲染特效标记。 */
+  readonly effect?: 'tool-read' | 'tool-search' | 'tool-edit' | 'tool-shell' | 'tool-web' | 'tool-git' | 'tool-package' | 'tool-flow' | 'combo' | 'victory' | 'defeat'
+  /** 连击数。 */
+  readonly combo?: number
 }
 
 /** 装配后的弹幕视图节点，喂给 ConversationViewBuilder。 */

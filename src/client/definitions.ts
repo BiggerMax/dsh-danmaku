@@ -24,6 +24,18 @@ function danmakuNode(context: ConversationNodeContext, item: DanmakuItem): Danma
 }
 
 // 判定是否为子 agent 相关工具
+function toolEffect(name: string): DanmakuItem['effect'] | undefined {
+  const n = name.toLowerCase()
+  if (/^(read|cat|head|tail|less|open|view)/.test(n)) return 'tool-read'
+  if (/^(grep|rg|find|search|glob|web_search)/.test(n)) return n.includes('web') ? 'tool-web' : 'tool-search'
+  if (/^(edit|write|apply_patch|sed|perl)/.test(n)) return 'tool-edit'
+  if (/^(bash|shell|exec|run|terminal|command)/.test(n)) return 'tool-shell'
+  if (/^(git)/.test(n)) return 'tool-git'
+  if (/^(npm|pnpm|yarn|package)/.test(n)) return 'tool-package'
+  if (/^(workflow|agent_teams)/.test(n)) return 'tool-flow'
+  return undefined
+}
+
 function isSubagentTool(name: string): boolean {
   return name === 'subagent'
     || name === 'subagent_fork'
@@ -51,6 +63,7 @@ function extractSubagentDesc(args: string): string {
 
 // ─── 耗时追踪：记录每个 tool/call 的起始时间，tool/result 时取出 ──
 const toolCallStartTimes = new Map<string, number>()
+const toolCallNames = new Map<string, string>()
 
 /** 格式化耗时（ms → `⏱ X.Xs` / `⏱ Xms`）。 */
 function fmtDuration(ms: number): string {
@@ -136,7 +149,10 @@ const danmakuToolCallDefinition: ConversationNodeDefinition = {
   start: (_context, match) => {
     if (match.event.type !== 'tool/call') throw new Error('danmaku-tool-call start requires tool/call')
     const { name, arguments: args, callId } = match.event.data
-    if (callId) toolCallStartTimes.set(callId, match.event.time)
+    if (callId) {
+      toolCallStartTimes.set(callId, match.event.time)
+      toolCallNames.set(callId, name)
+    }
     return { name, args: compactArgs(args), time: match.event.time }
   },
   update: (context) => context.state,
@@ -153,6 +169,8 @@ const danmakuToolCallDefinition: ConversationNodeDefinition = {
         kind: 'subagent',
         tone: 'neutral',
         time: state.time,
+        toolName: state.name,
+        effect: toolEffect(state.name),
       })
     }
     const argText = state.args ? ` ${state.args}` : ''
@@ -162,6 +180,8 @@ const danmakuToolCallDefinition: ConversationNodeDefinition = {
       kind: 'tool-call',
       tone: 'neutral',
       time: state.time,
+      toolName: state.name,
+      effect: toolEffect(state.name),
     })
   },
 }
@@ -186,23 +206,28 @@ const danmakuToolResultDefinition: ConversationNodeDefinition = {
     const resultText = blocksToText(message.content, 30)
     // 计算耗时：从 toolCallStartTimes 中取该 callId 的起始时间
     let durationMs: number | undefined
+    let toolName: string | undefined
     if (callId) {
       const start = toolCallStartTimes.get(callId)
+      toolName = toolCallNames.get(callId)
       if (start != null) {
         durationMs = match.event.time - start
         toolCallStartTimes.delete(callId)
       }
+      toolCallNames.delete(callId)
     }
     return {
       isError,
       label: isError ? `❌ ${toolError.code}` : `✅ ${resultText}`,
       time: match.event.time,
       durationMs,
+      toolName,
+      effect: toolName ? toolEffect(toolName) : undefined,
     }
   },
   update: (context) => context.state,
   buildViewNode: (context) => {
-    const state = context.state as { isError: boolean; label: string; time: number; durationMs?: number } | undefined
+    const state = context.state as { isError: boolean; label: string; time: number; durationMs?: number; toolName?: string; effect?: DanmakuItem['effect'] } | undefined
     if (!state) return null
     const durSuffix = state.durationMs != null ? ` ${fmtDuration(state.durationMs)}` : ''
     return danmakuNode(context, {
@@ -211,6 +236,8 @@ const danmakuToolResultDefinition: ConversationNodeDefinition = {
       kind: 'tool-result',
       tone: state.isError ? 'error' : 'ok',
       time: state.time,
+      toolName: state.toolName,
+      effect: state.effect,
     })
   },
 }
@@ -281,6 +308,7 @@ const danmakuTurnDefinition: ConversationNodeDefinition = {
       kind: 'turn',
       tone: state.isError ? 'error' : 'ok',
       time: state.time,
+      effect: state.isError ? 'defeat' : 'victory',
     })
   },
 }
