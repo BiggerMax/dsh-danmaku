@@ -99,6 +99,13 @@ export class DanmakuBus {
     this.updateCombo(coalesced)
   }
 
+  /** 系统生成弹幕（预言/观众反应等）：不参与合并，直接记录并广播。 */
+  emit(item: DanmakuItem): void {
+    const themed = this.themeGetter ? { ...item, theme: this.themeGetter() } : item
+    this.record(themed)
+    for (const listener of [...this.listeners]) listener(themed)
+  }
+
   subscribe(listener: DanmakuListener): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)

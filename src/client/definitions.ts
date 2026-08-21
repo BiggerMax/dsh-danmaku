@@ -78,6 +78,19 @@ function fmtTokens(total: number): string {
   return `🪙 ${total}`
 }
 
+/** 错误原因分类：按 code/message 归类为 图标 + 类别名。 */
+function classifyError(code?: string, message?: string): { icon: string; label: string } {
+  const s = `${code ?? ''} ${message ?? ''}`.toLowerCase()
+  if (/enoent|eisdir|not\s*found|不存在|no\s*such/.test(s)) return { icon: '📂', label: '文件不存在' }
+  if (/eacces|eperm|permission|denied|权限/.test(s)) return { icon: '🔐', label: '权限不足' }
+  if (/etimedout|timeout|timed?\s*out|超时|deadline/.test(s)) return { icon: '⏱', label: '执行超时' }
+  if (/econn|enotfound|network|fetch\s*failed|socket|\bdns\b|网络/.test(s)) return { icon: '🌐', label: '网络错误' }
+  if (/invalid|validation|schema|参数|expected|unexpected/.test(s)) return { icon: '🧩', label: '参数错误' }
+  if (/eexist|already\s*exists|已存在/.test(s)) return { icon: '📑', label: '已存在冲突' }
+  if (/abort|cancelled|canceled|中断|取消/.test(s)) return { icon: '🚫', label: '已中止' }
+  return { icon: '💥', label: '未知异常' }
+}
+
 // ─── 定义 1: 用户消息 ─────────────────────────────────────────────────
 
 const danmakuUserDefinition: ConversationNodeDefinition = {
@@ -201,6 +214,13 @@ const danmakuToolResultDefinition: ConversationNodeDefinition = {
     if (match.event.type !== 'tool/result') throw new Error('danmaku-tool-result start requires tool/result')
     const { message, error: toolError, callId } = match.event.data
     const isError = !!toolError
+    // 错误分类：📂不存在 / 🔐权限 / ⏱超时 / 🌐网络 / 🧩参数 / 📑冲突 / 🚫中止 / 💥未知
+    const errCategory = isError
+      ? classifyError(
+          (toolError as { code?: string } | undefined)?.code,
+          (toolError as { message?: string } | undefined)?.message,
+        )
+      : undefined
     // 通过 reader 查找前一个工具调用的上下文来获取工具名
     // 注：这里 reader 在 start 中不可用，后备方案——从 message.content 中提取
     const resultText = blocksToText(message.content, 30)
@@ -218,7 +238,9 @@ const danmakuToolResultDefinition: ConversationNodeDefinition = {
     }
     return {
       isError,
-      label: isError ? `❌ ${toolError.code}` : `✅ ${resultText}`,
+      label: isError
+        ? `${errCategory?.icon ?? '❌'} ${errCategory?.label ?? '失败'} · ${toolError.code}`
+        : `✅ ${resultText}`,
       time: match.event.time,
       durationMs,
       toolName,
@@ -299,7 +321,8 @@ const danmakuTurnDefinition: ConversationNodeDefinition = {
         time: state.time,
       })
     }
-    const errSuffix = state.isError ? ` ⚠️ ${state.errorMsg ?? ''}` : ''
+    const errCat = state.isError ? classifyError(undefined, state.errorMsg) : undefined
+    const errSuffix = state.isError ? ` ${errCat?.icon ?? '⚠️'} ${errCat?.label ?? '失败'}${state.errorMsg ? ` · ${state.errorMsg}` : ''}` : ''
     const durSuffix = state.durationMs != null ? ` ${fmtDuration(state.durationMs)}` : ''
     const tokSuffix = state.tokenUsage?.total > 0 ? ` ${fmtTokens(state.tokenUsage.total)}` : ''
     return danmakuNode(context, {
@@ -309,6 +332,7 @@ const danmakuTurnDefinition: ConversationNodeDefinition = {
       tone: state.isError ? 'error' : 'ok',
       time: state.time,
       effect: state.isError ? 'defeat' : 'victory',
+      tokenUsage: state.tokenUsage,
     })
   },
 }

@@ -50,6 +50,10 @@ export interface DanmakuSettings {
   direction: DanmakuDirection
   /** 暂停播放：新弹幕不再生成，已播放的继续；双击控制条切换。 */
   paused: boolean
+  /** Token 燃烧炉角标（会话累计 token 可视化）。 */
+  tokenStove: boolean
+  /** 用户自定义皮肤 CSS（追加注入）。 */
+  customCss: string
 }
 
 export const DEFAULT_FILTERS: DanmakuFilters = {
@@ -115,6 +119,8 @@ export const DEFAULT_SETTINGS: DanmakuSettings = {
   region: DEFAULT_REGION,
   direction: DEFAULT_DIRECTION,
   paused: false,
+  tokenStove: true,
+  customCss: '',
 }
 
 const STORAGE_KEY = 'dsh.trajectory-danmaku.settings'
@@ -199,6 +205,8 @@ export function createSettingsStore(): SettingsStore {
           direction: loadDirection(cur),
           // 暂停状态不跨页面持久化：刷新后自动恢复播放
           paused: false,
+          tokenStove: cur.tokenStove != null ? cur.tokenStove : DEFAULT_SETTINGS.tokenStove,
+          customCss: typeof cur.customCss === 'string' ? cur.customCss : DEFAULT_SETTINGS.customCss,
         }
       }
     } catch { /* fall through */ }

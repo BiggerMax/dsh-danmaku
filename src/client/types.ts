@@ -22,6 +22,8 @@ export interface DanmakuItem {
   readonly effect?: 'tool-read' | 'tool-search' | 'tool-edit' | 'tool-shell' | 'tool-web' | 'tool-git' | 'tool-package' | 'tool-flow' | 'combo' | 'victory' | 'defeat'
   /** 连击数。 */
   readonly combo?: number
+  /** Token 用量（turn-end 携带，供燃烧炉统计）。 */
+  readonly tokenUsage?: { total: number; input: number; output: number }
 }
 
 /** 装配后的弹幕视图节点，喂给 ConversationViewBuilder。 */
