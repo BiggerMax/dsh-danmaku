@@ -4,9 +4,8 @@
  */
 import type { DanmakuBus } from './bus'
 import type { DanmakuItem } from './types'
-import type { DanmakuKind, DanmakuTheme, DanmakuDensity, DanmakuRegion, DanmakuDirection, SettingsStore, SnapEdge } from './settings'
-import { ALL_THEMES, THEME_LABEL, ALL_DENSITIES, DENSITY_LANES, DENSITY_LABEL, DENSITY_EMOJI, ALL_REGIONS, REGION_LABEL, REGION_EMOJI, ALL_DIRECTIONS, DIRECTION_LABEL, DIRECTION_EMOJI } from './settings'
-
+import type { DanmakuKind, DanmakuDensity, DanmakuRegion, DanmakuDirection, SettingsStore, SnapEdge } from './settings'
+import { ALL_DENSITIES, DENSITY_LANES, DENSITY_LABEL, DENSITY_EMOJI, ALL_REGIONS, REGION_LABEL, REGION_EMOJI, ALL_DIRECTIONS, DIRECTION_LABEL, DIRECTION_EMOJI } from './settings'
 // kind (DanmakuItem) → settings.filters 中的布尔键
 const FILTER_KEY: Record<DanmakuKind, string> = {
   'user': 'user',
@@ -27,18 +26,6 @@ const KIND_EMOJI: Record<DanmakuKind, string> = {
   'thinking': '💭',
 }
 const KIND_ORDER: DanmakuKind[] = ['user', 'assistant', 'tool-call', 'tool-result', 'turn', 'subagent', 'thinking']
-
-// 主题切换：按 ALL_THEMES 顺序循环
-const THEME_ORDER = ALL_THEMES
-const THEME_EMOJI: Record<DanmakuTheme, string> = {
-  'classic': '🎨',
-  'neon': '✨',
-  'cyber': '🤖',
-  'cinema': '🎬',
-  'mono': '🔤',
-  'battle': '⚔️',
-}
-
 const LANE_HEIGHT = 28
 const TOP_GAP = 60
 const BOTTOM_GAP = 90
@@ -46,10 +33,8 @@ const STYLE_ID = 'dsh-danmaku-css'
 const SNAP_THRESHOLD = 48 // 拖到距屏幕边缘 48px 内 → 贴边自动收纳
 const CTRL_W = 210        // 控制条估算宽度（边缘判定用）
 const CTRL_H = 30         // 控制条估算高度（边缘判定用）
-
 // 密度切换：按 ALL_DENSITIES 顺序循环
 const DENSITY_ORDER = ALL_DENSITIES
-
 let cssInjected = false
 function injectCss(): void {
   if (typeof document === 'undefined') return
@@ -59,7 +44,6 @@ function injectCss(): void {
   s.dataset.pluginCss = STYLE_ID
   s.textContent = `
 .dsh-danmaku-layer { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:999; }
-
 /* ── 基础（经典）弹幕样式 ── */
 .dsh-danmaku-item {
   --danmaku-duration: 8s;
@@ -84,112 +68,6 @@ function injectCss(): void {
 .dsh-danmaku-kind-turn  { border-color:rgba(168,85,247,0.68); }
 .dsh-danmaku-kind-subagent { border-color:rgba(245,158,11,0.7); box-shadow:0 2px 12px rgba(0,0,0,0.32), 0 0 10px rgba(245,158,11,0.25); }
 .dsh-danmaku-kind-thinking { border-color:rgba(99,102,241,0.75); box-shadow:0 2px 12px rgba(0,0,0,0.32), 0 0 12px rgba(129,140,248,0.28); }
-
-/* ── 霓虹主题：彩色发光、渐变色、发光脉冲 ── */
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-item {
-  background:rgba(0,0,0,0.82); border:1px solid rgba(255,255,255,0.35);
-  font-size:13px; letter-spacing:0.3px;
-  text-shadow:0 0 6px currentColor, 0 0 12px currentColor;
-  animation:dsh-danmaku-slide var(--danmaku-duration) linear both, dsh-danmaku-neon-glow 2s ease-in-out infinite;
-  box-shadow:0 0 16px currentColor;
-}
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-item .dsh-danmaku-text {
-  background:linear-gradient(90deg,#06b6d4,#a855f7,#ec4899,#f97316,#06b6d4);
-  background-size:200% 100%;
-  -webkit-background-clip:text; background-clip:text;
-  -webkit-text-fill-color:transparent; color:transparent;
-  animation:dsh-danmaku-neon-shimmer 4s linear infinite;
-}
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-kind-user { border-color:#fbbf24; color:#fbbf24; }
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-kind-assistant { border-color:#34d399; color:#34d399; }
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-kind-tool-call { border-color:#60a5fa; color:#60a5fa; }
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-kind-turn { border-color:#c084fc; color:#c084fc; }
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-kind-subagent { border-color:#f59e0b; color:#f59e0b; }
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-kind-thinking { border-color:#818cf8; color:#818cf8; }
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-tone-error { border-color:#f87171; color:#f87171; }
-@keyframes dsh-danmaku-neon-glow {
-  0%,100% { filter:brightness(1); }
-  50% { filter:brightness(1.15); }
-}
-@keyframes dsh-danmaku-neon-shimmer {
-  0% { background-position:0% 50%; }
-  100% { background-position:200% 50%; }
-}
-
-/* ── 赛博朋克主题：深黑背景、青/洋红双色调、扫描线、等宽字体 ── */
-.dsh-danmaku-layer[data-theme="cyber"] .dsh-danmaku-item {
-  background:rgba(0,0,0,0.92); border:1px solid #00ff9f;
-  color:#00ff9f; font-family:ui-monospace,"SFMono-Regular",monospace; font-size:12px;
-  text-shadow:0 0 4px #00ff9f, 0 0 8px rgba(0,255,159,0.4);
-  box-shadow:0 0 8px rgba(0,255,159,0.3), inset 0 0 4px rgba(0,255,159,0.1);
-  padding:3px 12px; border-radius:2px;
-  backdrop-filter:none; -webkit-backdrop-filter:none;
-}
-.dsh-danmaku-layer[data-theme="cyber"] .dsh-danmaku-item::before {
-  content:''; position:absolute; inset:0; pointer-events:none;
-  background:repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,255,159,0.04) 2px 3px);
-}
-.dsh-danmaku-layer[data-theme="cyber"] .dsh-danmaku-kind-user { border-color:#ff0080; color:#ff0080; text-shadow:0 0 4px #ff0080; }
-.dsh-danmaku-layer[data-theme="cyber"] .dsh-danmaku-kind-assistant { border-color:#00e0ff; color:#00e0ff; text-shadow:0 0 4px #00e0ff; }
-.dsh-danmaku-layer[data-theme="cyber"] .dsh-danmaku-kind-tool-call { border-color:#f0ff00; color:#f0ff00; text-shadow:0 0 4px #f0ff00; }
-.dsh-danmaku-layer[data-theme="cyber"] .dsh-danmaku-kind-turn { border-color:#ff6b6b; color:#ff6b6b; text-shadow:0 0 4px #ff6b6b; }
-.dsh-danmaku-layer[data-theme="cyber"] .dsh-danmaku-kind-subagent { border-color:#ff0080; color:#ff0080; text-shadow:0 0 4px #ff0080, 0 0 8px #00e0ff; }
-.dsh-danmaku-layer[data-theme="cyber"] .dsh-danmaku-kind-thinking { border-color:#7c3aed; color:#a78bfa; text-shadow:0 0 4px #a78bfa; }
-.dsh-danmaku-layer[data-theme="cyber"] .dsh-danmaku-tone-error { border-color:#ff0040; color:#ff0040; }
-
-/* ── 电影字幕主题：深色背景、白色字体、衬线体、字间距大、上下留白 ── */
-.dsh-danmaku-layer[data-theme="cinema"] .dsh-danmaku-item {
-  background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.2);
-  color:#f5f5f0; font-family:Georgia,"Times New Roman",serif; font-size:14px; font-weight:400;
-  letter-spacing:1px; padding:8px 20px; border-radius:2px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.5); text-shadow:0 1px 3px rgba(0,0,0,0.8);
-  backdrop-filter:none; -webkit-backdrop-filter:none;
-}
-.dsh-danmaku-layer[data-theme="cinema"] .dsh-danmaku-kind-user { border-color:rgba(255,215,0,0.5); color:#fff5cc; }
-.dsh-danmaku-layer[data-theme="cinema"] .dsh-danmaku-kind-assistant { border-color:rgba(180,180,200,0.4); color:#e8e8f0; }
-.dsh-danmaku-layer[data-theme="cinema"] .dsh-danmaku-kind-tool-call { border-color:rgba(100,149,237,0.5); color:#cce0ff; }
-.dsh-danmaku-layer[data-theme="cinema"] .dsh-danmaku-kind-turn { border-color:rgba(255,200,100,0.5); color:#ffe4b5; }
-.dsh-danmaku-layer[data-theme="cinema"] .dsh-danmaku-kind-subagent { border-color:rgba(200,100,255,0.5); color:#e8d0ff; }
-.dsh-danmaku-layer[data-theme="cinema"] .dsh-danmaku-kind-thinking { border-color:rgba(120,140,200,0.5); color:#d0d8f0; }
-.dsh-danmaku-layer[data-theme="cinema"] .dsh-danmaku-tone-error { border-color:rgba(220,50,50,0.6); color:#ffcccc; }
-
-/* ── 极简等宽主题：纯黑底、灰色字体、无边框、只有文字 ── */
-.dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-item {
-  background:transparent; border:none;
-  color:#9ca3af; font-family:ui-monospace,"SFMono-Regular",monospace; font-size:12px; font-weight:400;
-  box-shadow:none; text-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
-  padding:0 10px; border-radius:0; line-height:20px;
-}
-.dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-kind-user { color:#fbbf24; }
-.dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-kind-assistant { color:#9ca3af; }
-.dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-kind-tool-call { color:#93c5fd; }
-.dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-kind-turn { color:#c4b5fd; }
-.dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-kind-subagent { color:#f59e0b; }
-.dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-tone-ok { color:#6ee7b7; }
-.dsh-danmaku-layer[data-theme="mono"] .dsh-danmaku-tone-error { color:#fca5a5; }
-
-/* ── 战斗模式：RPG HUD + 技能色彩 ── */
-.dsh-danmaku-layer[data-theme="battle"] { background:radial-gradient(ellipse at center, rgba(20,10,40,0.08), transparent 65%); }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-item {
-  background:linear-gradient(135deg,rgba(30,15,60,0.94),rgba(8,12,30,0.94));
-  border:1px solid rgba(250,204,21,0.62); border-radius:5px;
-  font-family:ui-monospace,"SFMono-Regular",monospace; letter-spacing:.3px;
-  box-shadow:0 0 10px rgba(250,204,21,.18), inset 0 0 12px rgba(99,102,241,.12);
-  text-shadow:0 0 5px currentColor;
-}
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-kind-tool-call { border-color:#60a5fa; color:#bfdbfe; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-kind-tool-result.dsh-danmaku-tone-ok { border-color:#34d399; color:#a7f3d0; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-kind-subagent { border-color:#c084fc; color:#e9d5ff; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-kind-thinking { border-color:#818cf8; color:#c7d2fe; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-tone-error { border-color:#fb7185; color:#fecdd3; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-read { border-left:4px solid #38bdf8; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-search { border-left:4px solid #a78bfa; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-edit { border-left:4px solid #facc15; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-shell { border-left:4px solid #4ade80; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-web { border-left:4px solid #22d3ee; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-git { border-left:4px solid #fb923c; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-package { border-left:4px solid #f472b6; }
-.dsh-danmaku-layer[data-theme="battle"] .dsh-danmaku-effect-tool-flow { border-left:4px solid #c084fc; }
 .dsh-danmaku-effect-combo { animation:dsh-danmaku-slide var(--danmaku-duration) linear both, dsh-danmaku-combo-pulse .7s ease-in-out infinite; }
 @keyframes dsh-danmaku-combo-pulse { 50% { transform:scale(1.08); filter:brightness(1.35); } }
 .dsh-danmaku-celebration {
@@ -202,7 +80,6 @@ function injectCss(): void {
 @keyframes dsh-danmaku-celebrate-in { 0% { opacity:0; transform:scale(.6); } 12% { opacity:1; transform:scale(1.08); } 24% { transform:scale(1); } 78% { opacity:1; } 100% { opacity:0; transform:scale(1.15); } }
 .dsh-danmaku-particle { position:fixed; width:7px; height:7px; border-radius:50%; animation:dsh-danmaku-particle-fly 1.5s ease-out forwards; }
 @keyframes dsh-danmaku-particle-fly { from { opacity:1; transform:translate(0,0) scale(1); } to { opacity:0; transform:translate(var(--dx),var(--dy)) rotate(360deg) scale(.2); } }
-
 /* ── Agent 战场：召唤阵 + 竞速 ── */
 .dsh-danmaku-battlefield {
   position:fixed; right:16px; top:56px; z-index:1001; pointer-events:auto;
@@ -232,7 +109,6 @@ function injectCss(): void {
 .dsh-danmaku-race-row .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#d1d5db; }
 .dsh-danmaku-race-row .status { flex:none; font-size:10px; }
 .dsh-danmaku-race-empty { text-align:center; color:#6b7280; font-size:11px; padding:10px 0; }
-
 /* ── 轨迹雷达：当前轮事件链 ── */
 .dsh-danmaku-radar {
   position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:1001; pointer-events:auto;
@@ -248,14 +124,15 @@ function injectCss(): void {
 .dsh-danmaku-radar-conn { color:#4b5563; font-size:12px; }
 .dsh-danmaku-radar-label { color:#9ca3af; font-size:10px; margin-right:4px; white-space:nowrap; }
 @keyframes dsh-danmaku-fade-up { from { opacity:0; transform:translateX(-50%) translateY(8px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
-
+/* 角落定位面板专用入场：不含 translateX(-50%)，避免整体偏移 */
+@keyframes dsh-danmaku-pop-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 /* ── 弹幕回放 ── */
 .dsh-danmaku-replay {
   position:fixed; left:16px; bottom:16px; z-index:1001; pointer-events:auto;
   width:min(320px, calc(100vw - 32px));
   background:rgba(15,17,23,0.92); border:1px solid rgba(255,255,255,0.14);
   border-radius:14px; box-shadow:0 12px 40px rgba(0,0,0,0.55); backdrop-filter:blur(8px);
-  padding:12px 14px; animation:dsh-danmaku-fade-up 0.2s ease-out both;
+  padding:12px 14px; animation:dsh-danmaku-pop-in 0.2s ease-out both;
 }
 .dsh-danmaku-replay h4 { margin:0 0 8px; font-size:12px; font-weight:600; color:#e5e7eb; }
 .dsh-danmaku-replay-controls { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
@@ -266,7 +143,6 @@ function injectCss(): void {
 .dsh-danmaku-replay .speed-btn.active { background:rgba(129,140,248,0.3); color:#fff; }
 .dsh-danmaku-replay .replay-time { font-size:10px; color:#9ca3af; text-align:right; }
 .dsh-danmaku-replay .replay-empty { text-align:center; color:#6b7280; font-size:11px; padding:8px 0; }
-
 /* ── Token 燃烧炉角标 ── */
 .dsh-danmaku-stove {
   position:fixed; left:16px; top:16px; z-index:1001; pointer-events:auto;
@@ -279,7 +155,6 @@ function injectCss(): void {
 .dsh-danmaku-stove .stove-sub { font-size:9px; color:#9ca3af; font-weight:400; line-height:1.2; }
 .dsh-danmaku-stove.hot { border-color:rgba(251,146,60,0.65); box-shadow:0 0 16px rgba(251,146,60,0.35), 0 6px 24px rgba(0,0,0,0.4); animation:dsh-danmaku-stove-in 0.25s ease-out both, dsh-danmaku-node-pulse 1.4s ease-in-out infinite; }
 @keyframes dsh-danmaku-stove-in { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
-
 /* ── 直播间 HUD ── */
 .dsh-danmaku-livehud {
   position:fixed; left:50%; transform:translateX(-50%); top:16px; z-index:1001; pointer-events:auto;
@@ -291,14 +166,13 @@ function injectCss(): void {
 }
 .dsh-danmaku-livehud .live-dot { width:7px; height:7px; border-radius:50%; background:#ef4444; animation:dsh-danmaku-node-pulse 1s ease-in-out infinite; flex:none; }
 .dsh-danmaku-livehud b { color:#fff; font-variant-numeric:tabular-nums; }
-
 /* ── 皮肤编辑器 ── */
 .dsh-danmaku-skin {
   position:fixed; right:16px; bottom:16px; z-index:1001; pointer-events:auto;
   width:min(320px, calc(100vw - 32px));
   background:rgba(15,17,23,0.94); border:1px solid rgba(255,255,255,0.14);
   border-radius:14px; box-shadow:0 12px 40px rgba(0,0,0,0.55); backdrop-filter:blur(8px);
-  padding:12px 14px; animation:dsh-danmaku-fade-up 0.2s ease-out both;
+  padding:12px 14px; animation:dsh-danmaku-pop-in 0.2s ease-out both;
 }
 .dsh-danmaku-skin h4 { margin:0 0 8px; font-size:12px; font-weight:600; color:#e5e7eb; display:flex; align-items:center; justify-content:space-between; }
 .dsh-danmaku-skin textarea {
@@ -310,12 +184,9 @@ function injectCss(): void {
 .dsh-danmaku-skin textarea:focus { border-color:rgba(129,140,248,0.55); }
 .dsh-danmaku-skin .skin-tip { font-size:10px; color:#6b7280; margin:6px 0; line-height:1.5; }
 .dsh-danmaku-skin .skin-actions { display:flex; gap:8px; }
-
 @keyframes dsh-danmaku-slide { from { transform:translateX(100vw); } to { transform:translateX(-110%); } }
 @keyframes dsh-danmaku-slide-ltr { from { transform:translateX(-110%); } to { transform:translateX(100vw); } }
 .dsh-danmaku-item.dsh-danmaku-dir-ltr { animation-name:dsh-danmaku-slide-ltr !important; }
-.dsh-danmaku-layer[data-theme="neon"] .dsh-danmaku-item.dsh-danmaku-dir-ltr { animation:dsh-danmaku-slide-ltr var(--danmaku-duration) linear both, dsh-danmaku-neon-glow 2s ease-in-out infinite !important; }
-
 /* ── 入场/出场动画（经典主题） ── */
 @keyframes dsh-danmaku-fade-in { from { opacity:0; } to { opacity:1; } }
 @keyframes dsh-danmaku-fade-out { from { opacity:1; } to { opacity:0; } }
@@ -323,7 +194,6 @@ function injectCss(): void {
   display:inline-block; animation:dsh-danmaku-fade-in 0.3s ease-out;
 }
 .dsh-danmaku-item.dsh-danmaku-fading-out .dsh-danmaku-text { animation:dsh-danmaku-fade-out 0.25s ease-in forwards; }
-
 .dsh-danmaku-control {
   position:fixed; pointer-events:auto; z-index:1000;
   display:flex; align-items:center; gap:8px; user-select:none;
@@ -383,7 +253,6 @@ function injectCss(): void {
 }
 .dsh-danmaku-tab:hover { background:rgba(30,32,38,0.9); box-shadow:0 6px 20px rgba(0,0,0,0.4); }
 .dsh-danmaku-tab.hidden { display:none; }
-
 /* ── 弹幕详情面板 ── */
 .dsh-danmaku-detail {
   position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
@@ -433,7 +302,6 @@ function injectCss(): void {
   position:fixed; inset:0; z-index:1001; pointer-events:auto;
   background:rgba(0,0,0,0.35); animation:dsh-danmaku-detail-in 0.15s ease-out;
 }
-
 /* ── 弹幕历史面板 ── */
 .dsh-danmaku-history {
   position:fixed; right:12px; top:56px; bottom:12px;
@@ -489,7 +357,6 @@ function injectCss(): void {
   background:rgba(0,0,0,0.2);
   animation:dsh-danmaku-backdrop-fade 0.22s ease-out both;
 }
-
 /* 类型筛选 + 主题切换容器 */
 .dsh-danmaku-filters {
   display:flex; gap:3px; align-items:center; padding:0 6px; margin-left:2px;
@@ -507,7 +374,6 @@ function injectCss(): void {
 .dsh-danmaku-filter.active:hover { background:rgba(129,140,248,0.22); }
 .dsh-danmaku-filter.inactive { opacity:0.32; filter:grayscale(0.8); }
 .dsh-danmaku-filter:focus-visible { outline:2px solid rgba(129,140,248,0.7); outline-offset:1px; }
-
 .dsh-danmaku-theme-toggle {
   display:inline-flex; align-items:center; justify-content:center;
   min-width:44px; height:22px; padding:0 8px; border-radius:6px;
@@ -519,7 +385,6 @@ function injectCss(): void {
 }
 .dsh-danmaku-theme-toggle:hover { background:rgba(129,140,248,0.22); border-color:rgba(129,140,248,0.55); }
 .dsh-danmaku-theme-toggle:focus-visible { outline:2px solid rgba(129,140,248,0.7); outline-offset:1px; }
-
 /* ── 下拉（筛选 / 设置） ── */
 .dsh-danmaku-drop { display:inline-flex; }
 .dsh-danmaku-drop-panel {
@@ -552,21 +417,16 @@ function injectCss(): void {
   document.head.appendChild(s)
   cssInjected = true
 }
-
 export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): () => void {
   injectCss()
-
   const container = document.createElement('div')
   container.className = 'dsh-danmaku-layer'
   container.dataset.plugin = 'dsh-danmaku'
-  container.dataset.theme = 'classic'
   document.body.appendChild(container)
-
   const items: Array<{ el: HTMLDivElement }> = []
   // 密度驱动的轨道数组：初始化时按默认密度，之后随设置变化动态调整
   let laneEndsTop = new Array(DENSITY_LANES['normal']).fill(0)
   let laneEndsBot = new Array(DENSITY_LANES['normal']).fill(0)
-
   function ensureLanes(): void {
     const lanes = DENSITY_LANES[settings.getSnapshot().density]
     if (laneEndsTop.length !== lanes) {
@@ -574,7 +434,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       laneEndsBot = new Array(lanes).fill(0)
     }
   }
-
   const ctrl = document.createElement('div')
   ctrl.className = 'dsh-danmaku-control'
   const dragHandle = document.createElement('span')
@@ -637,7 +496,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   }
   filterPanel.appendChild(filterGrid)
   filterDrop.appendChild(filterToggle); filterDrop.appendChild(filterPanel)
-
   // ── 设置（主题/密度/区域/方向，收进下拉 select） ──
   const settingsDrop = document.createElement('div')
   settingsDrop.className = 'dsh-danmaku-drop'
@@ -660,14 +518,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     row.appendChild(lab); row.appendChild(select)
     return row
   }
-  const themeSelect = document.createElement('select')
-  for (const t of THEME_ORDER) {
-    const o = document.createElement('option')
-    o.value = t
-    o.textContent = `${THEME_EMOJI[t]} ${THEME_LABEL[t]}`
-    themeSelect.appendChild(o)
-  }
-  themeSelect.addEventListener('change', () => { settings.update((d) => { d.theme = themeSelect.value as DanmakuTheme }) })
   const densitySelect = document.createElement('select')
   for (const d of DENSITY_ORDER) {
     const o = document.createElement('option')
@@ -692,7 +542,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     dirSelect.appendChild(o)
   }
   dirSelect.addEventListener('change', () => { settings.update((d) => { d.direction = dirSelect.value as DanmakuDirection }) })
-  settingsPanel.appendChild(mkRow('🎨 主题', themeSelect))
   settingsPanel.appendChild(mkRow('🔸 密度', densitySelect))
   settingsPanel.appendChild(mkRow('🔲 区域', regionSelect))
   settingsPanel.appendChild(mkRow('➡️ 方向', dirSelect))
@@ -710,7 +559,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   stoveRow.appendChild(stoveLabel); stoveRow.appendChild(stoveCheck)
   settingsPanel.appendChild(stoveRow)
   settingsDrop.appendChild(settingsToggle); settingsDrop.appendChild(settingsPanel)
-
   // 下拉开合：点击触发器切换，点击外部关闭；面板 fixed 定位到视口并防溢出
   function closeDrop(drop: HTMLDivElement): void {
     drop.classList.remove('open')
@@ -822,7 +670,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   ctrl.appendChild(skinBtn)
   ctrl.appendChild(speedInput); ctrl.appendChild(speedLabel)
   document.body.appendChild(ctrl)
-
   // 控制条真实尺寸缓存：收纳/展开时 display:none 导致 offsetWidth/Height 为 0，
   // 无法测量——在可见时（挂载/拖动/展开态）测量并缓存，避免估算值偏差把右侧裁掉。
   let lastCtrlW = 0
@@ -836,13 +683,11 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   }
   // 挂载时即测量一次（此时可见）
   ctrlSize()
-
   // 收纳标签：贴边收起时只剩这个小胶囊，悬停/点击展开
   const tab = document.createElement('div')
   tab.className = 'dsh-danmaku-tab hidden'
   tab.textContent = '弹幕'
   document.body.appendChild(tab)
-
   function positionTab(edge: SnapEdge, pos: { top: number; left: number }): void {
     tab.style.top = ''; tab.style.left = ''; tab.style.right = ''; tab.style.bottom = ''
     if (edge === 'left' || edge === 'right') tab.style.top = pos.top + 'px'
@@ -852,7 +697,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     if (edge === 'top') tab.style.top = '0px'
     if (edge === 'bottom') tab.style.bottom = '0px'
   }
-
   function refreshControlUI(): void {
     const snap = settings.getSnapshot()
     toggleBtn.className = 'dsh-danmaku-switch ' + (snap.enabled ? 'on' : 'off')
@@ -864,19 +708,13 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     ctrl.classList.toggle('paused', paused)
     speedInput.value = String(snap.speed)
     speedLabel.textContent = snap.speed + 'px/s'
-    // 更新下拉触发器文案
-    const themeEmoji = THEME_EMOJI[snap.theme] || THEME_EMOJI['classic']
-    settingsToggle.textContent = `${themeEmoji} 设置`
     // 同步 select 控件值
-    themeSelect.value = snap.theme
     densitySelect.value = snap.density
     regionSelect.value = snap.region
     dirSelect.value = snap.direction
     // Token 燃烧炉开关与可见性
     stoveCheck.checked = snap.tokenStove
     if (stoveEl) stoveEl.style.display = snap.tokenStove ? '' : 'none'
-    // 应用主题到弹幕层
-    container.dataset.theme = snap.theme
     ensureLanes()
     // 更新筛选按钮状态
     for (const kind of KIND_ORDER) {
@@ -908,7 +746,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       ctrl.style.left = snap.pos.left + 'px'
     }
   }
-
   let dragging = false
   let dragStartX = 0, dragStartY = 0, dragStartLeft = 0, dragStartTop = 0
   // 收纳后标签在光标下重新出现会触发 mouseenter → 立即展开，看起来像没隐藏。
@@ -920,6 +757,8 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   let hoverEdge: SnapEdge | null = null
   function onDown(e: MouseEvent | TouchEvent): void {
     const t = e.target as HTMLElement
+    // 下拉面板内部（含按钮里的 span/空白处）不触发拖动，也不关闭面板
+    if (filterDrop.contains(t) || settingsDrop.contains(t)) return
     if (t.tagName === 'BUTTON' || t.tagName === 'INPUT' || t.tagName === 'SELECT') return
     // 拖动开始 → 关闭下拉面板
     closeDrop(filterDrop); closeDrop(settingsDrop)
@@ -1027,7 +866,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   ctrl.addEventListener('touchstart', onDown)
   window.addEventListener('touchmove', onMove)
   window.addEventListener('touchend', onUp)
-
   // 双击控制条暂停/继续：清除已排队弹幕并切换暂停态
   let lastClickAt = 0
   ctrl.addEventListener('click', (e) => {
@@ -1047,7 +885,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       lastClickAt = now
     }
   })
-
   toggleBtn.addEventListener('click', () => {
     settings.update((d) => { d.enabled = !d.enabled })
     if (!settings.getSnapshot().enabled) items.forEach((it) => it.el.remove()); items.length = 0
@@ -1055,26 +892,21 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   speedInput.addEventListener('input', () => {
     settings.update((d) => { d.speed = Number(speedInput.value) })
   })
-
   // ── 弹幕详情面板 ──
   let detailPanel: HTMLDivElement | null = null
   let detailBackdrop: HTMLDivElement | null = null
   let detailItem: DanmakuItem | null = null
-
   function fmtTime(ts: number): string {
     const d = new Date(ts)
     return d.toLocaleTimeString('zh-CN', { hour12: false })
   }
-
   function showDetail(item: DanmakuItem): void {
     if (detailPanel) return
     detailItem = item
     items.forEach((it) => { it.el.style.animationPlayState = 'paused' })
-
     const backdrop = document.createElement('div')
     backdrop.className = 'dsh-danmaku-detail-backdrop'
     document.body.appendChild(backdrop)
-
     const panel = document.createElement('div')
     panel.className = 'dsh-danmaku-detail'
     const header = document.createElement('div')
@@ -1104,45 +936,36 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     closeBtn.addEventListener('click', closeDetail)
     panel.appendChild(closeBtn)
     document.body.appendChild(panel)
-
     detailPanel = panel
     detailBackdrop = backdrop
-
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { closeDetail(); window.removeEventListener('keydown', onKey) }
     }
     window.addEventListener('keydown', onKey)
     backdrop.addEventListener('click', closeDetail)
   }
-
   function closeDetail(): void {
     if (detailPanel) detailPanel.remove(); detailPanel = null
     if (detailBackdrop) detailBackdrop.remove(); detailBackdrop = null
     detailItem = null
     items.forEach((it) => { it.el.style.animationPlayState = '' })
   }
-
   function onDanmakuClick(item: DanmakuItem, el: HTMLDivElement): void {
     el.addEventListener('click', (e) => { e.stopPropagation(); showDetail(item) })
     el.addEventListener('touchend', (e) => { e.stopPropagation(); showDetail(item) }, { passive: true })
   }
-
   // ── 弹幕历史面板 ──
   let historyPanel: HTMLDivElement | null = null
   let historyBackdrop: HTMLDivElement | null = null
   let historyData: DanmakuItem[] = []
-
   function showHistory(): void {
     if (historyPanel) return
     historyData = bus.getHistory().slice().reverse()
-
     const backdrop = document.createElement('div')
     backdrop.className = 'dsh-danmaku-history-backdrop'
     document.body.appendChild(backdrop)
-
     const panel = document.createElement('div')
     panel.className = 'dsh-danmaku-history'
-
     const header = document.createElement('div')
     header.className = 'dsh-danmaku-history-header'
     header.textContent = '📜 弹幕历史'
@@ -1155,7 +978,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     closeBtn.textContent = '✕'
     closeBtn.addEventListener('click', hideHistory)
     header.appendChild(closeBtn)
-
     // 搜索 + 导出栏
     const searchRow = document.createElement('div')
     searchRow.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 14px;border-bottom:1px solid rgba(255,255,255,0.08);'
@@ -1182,7 +1004,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       } catch { /* ignore */ }
     })
     searchRow.appendChild(searchInput); searchRow.appendChild(exportBtn)
-
     // 过滤函数
     function applySearch(): void {
       const q = searchInput.value.trim().toLowerCase()
@@ -1193,7 +1014,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       })
     }
     searchInput.addEventListener('input', applySearch)
-
     // 统计行
     let totalDur = 0, durCount = 0, errorCount = 0
     for (const item of historyData) {
@@ -1207,7 +1027,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       `<span>📊 总计 ${historyData.length} 条</span>` +
       `<span>❌ 错误 ${errorCount} 条</span>` +
       (durCount > 0 ? `<span>⏱ 平均 ${(totalDur / durCount / 1000).toFixed(1)}s (${durCount} 条含耗时)</span>` : `<span>⏱ 无耗时记录</span>`)
-
     // 工具排行榜：🏎 最快 / 🐢 最慢 / 💥 失败最多 / 🔥 使用最多
     interface ToolStat { count: number; totalMs: number; errs: number; fastest: number; slowest: number }
     const toolStats = new Map<string, ToolStat>()
@@ -1243,10 +1062,8 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       if (mostFailed) html += `<span title="失败次数最多">💥 ${mostFailed[0]} ×${mostFailed[1].errs}</span>`
       rankRow.innerHTML = html
     }
-
     const body = document.createElement('div')
     body.className = 'dsh-danmaku-history-body'
-
     if (historyData.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'dsh-danmaku-history-empty'
@@ -1272,7 +1089,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
         body.appendChild(row)
       }
     }
-
     panel.appendChild(header); panel.appendChild(stats)
     if (rankRow) panel.appendChild(rankRow)
     panel.appendChild(searchRow); panel.appendChild(body)
@@ -1281,13 +1097,11 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     historyBackdrop = backdrop
     backdrop.addEventListener('click', hideHistory)
   }
-
   function hideHistory(): void {
     if (historyPanel) historyPanel.remove(); historyPanel = null
     if (historyBackdrop) historyBackdrop.remove(); historyBackdrop = null
     historyData = []
   }
-
   // ── Agent 战场：召唤阵 + 竞速 ──
   // 子 agent 生命周期：subagent 弹幕 = 召唤；tool-result(toolName 为子 agent 工具) = 完成
   const SUBAGENT_TOOL_RE = /^(subagent|subagent_fork|ralph|workflow|agent_teams[_-]?\w*)$/i
@@ -1301,18 +1115,15 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   const agents = new Map<string, AgentEntry>()
   let finishOrder = 0
   let battlefieldPanel: HTMLDivElement | null = null
-
   function isSubagentToolName(name?: string): boolean {
     return !!name && SUBAGENT_TOOL_RE.test(name)
   }
-
   function trackSubagentSpawn(item: DanmakuItem): void {
     const callId = item.id.replace(/^tool:/, '')
     const name = item.text.replace(/^🧠\s*/, '').trim() || 'agent'
     agents.set(callId, { name, status: 'running', order: null, spawnTime: item.time, doneTime: null })
     renderBattlefield()
   }
-
   function trackSubagentDone(item: DanmakuItem): void {
     const callId = item.id.replace(/^tool-result:/, '')
     const a = agents.get(callId)
@@ -1322,7 +1133,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     if (a.status === 'ok') { finishOrder++; a.order = finishOrder }
     renderBattlefield()
   }
-
   function renderBattlefield(): void {
     if (!battlefieldPanel) return
     const circle = battlefieldPanel.querySelector('.dsh-danmaku-circle')
@@ -1368,7 +1178,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       race.appendChild(row)
     }
   }
-
   function showBattlefield(): void {
     if (battlefieldPanel) return
     const panel = document.createElement('div')
@@ -1392,16 +1201,13 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     battlefieldPanel = panel
     renderBattlefield()
   }
-
   function hideBattlefield(): void {
     if (battlefieldPanel) { battlefieldPanel.remove(); battlefieldPanel = null }
   }
-
   // ── 轨迹雷达：当前轮事件链 ──
   const radarEvents: Array<{ emoji: string; tone: string }> = []
   let radarDone = false
   let radarPanel: HTMLDivElement | null = null
-
   function renderRadar(): void {
     if (!radarPanel) return
     radarPanel.innerHTML = ''
@@ -1428,13 +1234,11 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       }
     })
   }
-
   function pushRadar(item: DanmakuItem): void {
     if (radarEvents.length >= 14) radarEvents.shift()
     radarEvents.push({ emoji: KIND_EMOJI[item.kind] || '•', tone: item.tone })
     renderRadar()
   }
-
   function showRadar(): void {
     if (radarPanel) return
     const panel = document.createElement('div')
@@ -1443,11 +1247,9 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     radarPanel = panel
     renderRadar()
   }
-
   function hideRadar(): void {
     if (radarPanel) { radarPanel.remove(); radarPanel = null }
   }
-
   // ── 弹幕回放：按时间轴重放历史 ──
   let replayPanel: HTMLDivElement | null = null
   let replayTimer: ReturnType<typeof setInterval> | null = null
@@ -1461,7 +1263,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   let replaySlider: HTMLInputElement | null = null
   let replayTimeEl: HTMLDivElement | null = null
   const replaySpeedBtns: HTMLButtonElement[] = []
-
   function replayOffset(item: DanmakuItem): number {
     if (replayItems.length === 0) return 0
     return item.time - replayItems[0].time
@@ -1470,7 +1271,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     if (replayItems.length === 0) return 0
     return Math.max(0, replayItems[replayItems.length - 1].time - replayItems[0].time)
   }
-
   function replayTick(): void {
     if (!replayPlaying) return
     const elapsed = replayBase + (performance.now() - replayStart) * replaySpeed
@@ -1490,7 +1290,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       if (replaySlider) replaySlider.value = '100'
     }
   }
-
   function playReplay(): void {
     if (replayItems.length === 0) return
     replayPlaying = true
@@ -1500,7 +1299,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     replayTimer = setInterval(replayTick, 50)
     replayTick()
   }
-
   function pauseReplay(): void {
     if (!replayPlaying) return
     replayBase += (performance.now() - replayStart) * replaySpeed
@@ -1508,7 +1306,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     if (replayTimer) { clearInterval(replayTimer); replayTimer = null }
     if (replayPlayBtn) replayPlayBtn.textContent = '▶'
   }
-
   function resetReplay(): void {
     pauseReplay()
     replayIdx = 0
@@ -1517,7 +1314,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     if (replayTimeEl) replayTimeEl.textContent = '0%'
     if (replayPlayBtn) replayPlayBtn.textContent = '▶'
   }
-
   function showReplay(): void {
     if (replayPanel) return
     const panel = document.createElement('div')
@@ -1584,75 +1380,79 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       panel.appendChild(empty)
     }
   }
-
   function hideReplay(): void {
     pauseReplay()
     if (replayPanel) { replayPanel.remove(); replayPanel = null }
     replayPlayBtn = null; replaySlider = null; replayTimeEl = null
     replayItems = []; replayIdx = 0; replayBase = 0
   }
-
-  // ── Token 燃烧炉：会话累计 token 可视化 ──
-  let sessionTokens = 0
-  let sessionTokensIn = 0
-  let sessionTokensOut = 0
+  // ── Token 燃烧炉：当前工作区（同目录全部会话）token 总和可视化 ──
+  let taskTokens = 0
+  let taskTokensIn = 0
+  let taskTokensOut = 0
   let stoveEl: HTMLDivElement | null = null
   let stoveFlame: HTMLSpanElement | null = null
   let stoveTotal: HTMLSpanElement | null = null
-
   function fmtK(n: number): string {
-    if (n >= 10000) return (n / 1000).toFixed(1) + 'k'
-    if (n >= 1000) return (n / 1000).toFixed(2) + 'k'
+    if (n >= 10000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
+    if (n >= 1000) return (n / 1000).toFixed(2).replace(/0+$/, '').replace(/\.$/, '') + 'k'
     return String(n)
   }
-
   function ensureStove(): void {
     if (stoveEl || typeof document === 'undefined') return
     const el = document.createElement('div')
     el.className = 'dsh-danmaku-stove'
-    el.title = 'Token 燃烧炉（会话累计）'
+    el.title = 'Token 燃烧炉（当前工作区总和）'
     const flame = document.createElement('span')
     flame.textContent = '🔥'
     const total = document.createElement('span')
     total.textContent = '0'
     const sub = document.createElement('span')
     sub.className = 'stove-sub'
-    sub.textContent = '会话<br>Token'
+    sub.innerHTML = '工作区<br>Token'
     el.appendChild(flame); el.appendChild(total); el.appendChild(sub)
     document.body.appendChild(el)
     stoveEl = el; stoveFlame = flame; stoveTotal = total
   }
-
   function renderStove(): void {
     if (!stoveEl || !stoveFlame || !stoveTotal) return
-    stoveTotal.textContent = fmtK(sessionTokens)
-    const flames = sessionTokens >= 100000 ? '🔥🔥🔥🔥' : sessionTokens >= 50000 ? '🔥🔥🔥' : sessionTokens >= 10000 ? '🔥🔥' : '🔥'
+    stoveTotal.textContent = fmtK(taskTokens)
+    const flames = taskTokens >= 1000000 ? '🔥🔥🔥🔥' : taskTokens >= 500000 ? '🔥🔥🔥' : taskTokens >= 100000 ? '🔥🔥' : '🔥'
     stoveFlame.textContent = flames
-    stoveEl.classList.toggle('hot', sessionTokens >= 100000)
-    stoveEl.title = `会话 Token 累计 ${sessionTokens}（输入 ${fmtK(sessionTokensIn)} / 输出 ${fmtK(sessionTokensOut)}）`
+    stoveEl.classList.toggle('hot', taskTokens >= 1000000)
+    stoveEl.title = `当前工作区 Token 总和 ${taskTokens}（输入 ${fmtK(taskTokensIn)} / 输出 ${fmtK(taskTokensOut)}）`
   }
-
   function trackTokens(item: DanmakuItem): void {
-    if (!item.tokenUsage || item.tokenUsage.total <= 0) return
-    sessionTokens += item.tokenUsage.total
-    sessionTokensIn += item.tokenUsage.input
-    sessionTokensOut += item.tokenUsage.output
+    // 投影不可用时的兜底：轮次弹幕自带 tokenUsage（事件级累计）
+    if (!bus.getTokenTotals() && item.tokenUsage && item.tokenUsage.total > 0) {
+      taskTokens += item.tokenUsage.total
+      taskTokensIn += item.tokenUsage.input
+      taskTokensOut += item.tokenUsage.output
+      renderStove()
+      return
+    }
+    refreshTokensFromFeed()
+  }
+  /** 从 session 投影读取工作区聚合值并刷新显示。 */
+  function refreshTokensFromFeed(): void {
+    const t = bus.getTokenTotals()
+    if (!t) return
+    taskTokens = t.total
+    taskTokensIn = t.input
+    taskTokensOut = t.output
     renderStove()
   }
-
   // ── 弹幕预言：规则预测下一步 ──
   let recentTools: string[] = []
   let errorStreak = 0
   let turnToolCount = 0
   let lastProphecyAt = 0
-
   function prophecy(text: string): void {
     const now = Date.now()
     if (now - lastProphecyAt < 15000) return // 冷却，避免刷屏
     lastProphecyAt = now
     bus.emit({ id: `prophecy:${now}`, text, kind: 'thinking', tone: 'neutral', time: now })
   }
-
   function predict(item: DanmakuItem): void {
     if (item.kind === 'turn') {
       if (/轮开始/.test(item.text)) { recentTools = []; errorStreak = 0; turnToolCount = 0 }
@@ -1678,13 +1478,11 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       }
     }
   }
-
   // ── 直播间观众反应：本地规则生成 ──
   let lastReactionAt = 0
   const REACTIONS_OK = ['👏 太稳了', '🔥 这波漂亮', '✨ 行云流水', '👍 稳']
   const REACTIONS_ERR = ['😱 出错了', '🤔 要凉？', '👀 赶紧修']
   const REACTIONS_COMBO = ['🔥🔥🔥 666', '⚡ 连击！', '🎉 太快了']
-
   function react(list: string[]): void {
     const now = Date.now()
     if (now - lastReactionAt < 8000) return
@@ -1693,7 +1491,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     const text = list[Math.floor(Math.random() * list.length)]
     bus.emit({ id: `react:${now}`, text: `👤 ${text}`, kind: 'user', tone: 'neutral', time: now })
   }
-
   // ── 直播间 HUD：顶部状态条 ──
   let liveHudPanel: HTMLDivElement | null = null
   let hudAgentsEl: HTMLElement | null = null
@@ -1703,7 +1500,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
   let curTurnNo = 0
   let toolOkCount = 0
   let toolErrCount = 0
-
   function updateHud(): void {
     if (!liveHudPanel || !hudAgentsEl || !hudTurnEl || !hudRateEl || !hudTokEl) return
     const running = [...agents.values()].filter((a) => a.status === 'running').length
@@ -1711,9 +1507,8 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     hudTurnEl.textContent = curTurnNo > 0 ? `第 ${curTurnNo} 轮` : '—'
     const total = toolOkCount + toolErrCount
     hudRateEl.textContent = total > 0 ? Math.round((toolOkCount / total) * 100) + '%' : '—'
-    hudTokEl.textContent = fmtK(sessionTokens)
+    hudTokEl.textContent = fmtK(taskTokens)
   }
-
   function showLiveHud(): void {
     if (liveHudPanel) return
     const panel = document.createElement('div')
@@ -1738,16 +1533,205 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     liveHudPanel = panel
     updateHud()
   }
-
   function hideLiveHud(): void {
     if (liveHudPanel) { liveHudPanel.remove(); liveHudPanel = null }
     hudAgentsEl = null; hudTurnEl = null; hudRateEl = null; hudTokEl = null
   }
-
   // ── 用户自定义皮肤：自定义 CSS ──
   const CUSTOM_CSS_ID = 'dsh-danmaku-custom-css'
   let skinPanel: HTMLDivElement | null = null
-
+  // 内置皮肤预设：官方主题 + 创意皮肤，点击即应用并写入编辑器（可继续微调）
+  interface SkinPreset { name: string; css: string }
+  const SKIN_PRESETS: SkinPreset[] = [
+    {
+      name: '✨ 默认',
+      css: '',
+    },
+    {
+      name: '🎆 霓虹',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background:rgba(0,0,0,0.82); border:1px solid rgba(255,255,255,0.35);
+  font-size:13px; letter-spacing:0.3px;
+  text-shadow:0 0 6px currentColor, 0 0 12px currentColor;
+  animation:dsh-danmaku-slide var(--danmaku-duration) linear both, dsh-danmaku-neon-glow 2s ease-in-out infinite;
+  box-shadow:0 0 16px currentColor;
+}
+.dsh-danmaku-layer .dsh-danmaku-item.dsh-danmaku-dir-ltr {
+  animation:dsh-danmaku-slide-ltr var(--danmaku-duration) linear both, dsh-danmaku-neon-glow 2s ease-in-out infinite;
+}
+.dsh-danmaku-layer .dsh-danmaku-item .dsh-danmaku-text {
+  background:linear-gradient(90deg,#06b6d4,#a855f7,#ec4899,#f97316,#06b6d4);
+  background-size:200% 100%;
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+  animation:dsh-danmaku-neon-shimmer 4s linear infinite;
+}
+.dsh-danmaku-layer .dsh-danmaku-kind-user { border-color:#fbbf24; color:#fbbf24; }
+.dsh-danmaku-layer .dsh-danmaku-kind-assistant { border-color:#34d399; color:#34d399; }
+.dsh-danmaku-layer .dsh-danmaku-kind-tool-call { border-color:#60a5fa; color:#60a5fa; }
+.dsh-danmaku-layer .dsh-danmaku-kind-turn { border-color:#c084fc; color:#c084fc; }
+.dsh-danmaku-layer .dsh-danmaku-kind-subagent { border-color:#f59e0b; color:#f59e0b; }
+.dsh-danmaku-layer .dsh-danmaku-kind-thinking { border-color:#818cf8; color:#818cf8; }
+.dsh-danmaku-layer .dsh-danmaku-tone-error { border-color:#f87171; color:#f87171; }
+@keyframes dsh-danmaku-neon-glow {
+  0%,100% { filter:brightness(1); }
+  50% { filter:brightness(1.15); }
+}
+@keyframes dsh-danmaku-neon-shimmer {
+  0% { background-position:0% 50%; }
+  100% { background-position:200% 50%; }
+}`,
+    },
+    {
+      name: '🤖 赛博朋克',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background:rgba(0,0,0,0.92); border:1px solid #00ff9f;
+  color:#00ff9f; font-family:ui-monospace,"SFMono-Regular",monospace; font-size:12px;
+  text-shadow:0 0 4px #00ff9f, 0 0 8px rgba(0,255,159,0.4);
+  box-shadow:0 0 8px rgba(0,255,159,0.3), inset 0 0 4px rgba(0,255,159,0.1);
+  padding:3px 12px; border-radius:2px;
+  backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+.dsh-danmaku-layer .dsh-danmaku-item::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,255,159,0.04) 2px 3px);
+}
+.dsh-danmaku-layer .dsh-danmaku-kind-user { border-color:#ff0080; color:#ff0080; text-shadow:0 0 4px #ff0080; }
+.dsh-danmaku-layer .dsh-danmaku-kind-assistant { border-color:#00e0ff; color:#00e0ff; text-shadow:0 0 4px #00e0ff; }
+.dsh-danmaku-layer .dsh-danmaku-kind-tool-call { border-color:#f0ff00; color:#f0ff00; text-shadow:0 0 4px #f0ff00; }
+.dsh-danmaku-layer .dsh-danmaku-kind-turn { border-color:#ff6b6b; color:#ff6b6b; text-shadow:0 0 4px #ff6b6b; }
+.dsh-danmaku-layer .dsh-danmaku-kind-subagent { border-color:#ff0080; color:#ff0080; text-shadow:0 0 4px #ff0080, 0 0 8px #00e0ff; }
+.dsh-danmaku-layer .dsh-danmaku-kind-thinking { border-color:#7c3aed; color:#a78bfa; text-shadow:0 0 4px #a78bfa; }
+.dsh-danmaku-layer .dsh-danmaku-tone-error { border-color:#ff0040; color:#ff0040; }`,
+    },
+    {
+      name: '🎬 电影字幕',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.2);
+  color:#f5f5f0; font-family:Georgia,"Times New Roman",serif; font-size:14px; font-weight:400;
+  letter-spacing:1px; padding:8px 20px; border-radius:2px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5); text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+.dsh-danmaku-layer .dsh-danmaku-kind-user { border-color:rgba(255,215,0,0.5); color:#fff5cc; }
+.dsh-danmaku-layer .dsh-danmaku-kind-assistant { border-color:rgba(180,180,200,0.4); color:#e8e8f0; }
+.dsh-danmaku-layer .dsh-danmaku-kind-tool-call { border-color:rgba(100,149,237,0.5); color:#cce0ff; }
+.dsh-danmaku-layer .dsh-danmaku-kind-turn { border-color:rgba(255,200,100,0.5); color:#ffe4b5; }
+.dsh-danmaku-layer .dsh-danmaku-kind-subagent { border-color:rgba(200,100,255,0.5); color:#e8d0ff; }
+.dsh-danmaku-layer .dsh-danmaku-kind-thinking { border-color:rgba(120,140,200,0.5); color:#d0d8f0; }
+.dsh-danmaku-layer .dsh-danmaku-tone-error { border-color:rgba(220,50,50,0.6); color:#ffcccc; }`,
+    },
+    {
+      name: '🔤 极简等宽',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background:transparent; border:none;
+  color:#9ca3af; font-family:ui-monospace,"SFMono-Regular",monospace; font-size:12px; font-weight:400;
+  box-shadow:none; text-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
+  padding:0 10px; border-radius:0; line-height:20px;
+}
+.dsh-danmaku-layer .dsh-danmaku-kind-user { color:#fbbf24; }
+.dsh-danmaku-layer .dsh-danmaku-kind-assistant { color:#9ca3af; }
+.dsh-danmaku-layer .dsh-danmaku-kind-tool-call { color:#93c5fd; }
+.dsh-danmaku-layer .dsh-danmaku-kind-turn { color:#c4b5fd; }
+.dsh-danmaku-layer .dsh-danmaku-kind-subagent { color:#f59e0b; }
+.dsh-danmaku-layer .dsh-danmaku-tone-ok { color:#6ee7b7; }
+.dsh-danmaku-layer .dsh-danmaku-tone-error { color:#fca5a5; }`,
+    },
+    {
+      name: '⚔️ 战斗模式',
+      css: `.dsh-danmaku-layer {
+  background:radial-gradient(ellipse at center, rgba(20,10,40,0.08), transparent 65%);
+}
+.dsh-danmaku-layer .dsh-danmaku-item {
+  background:linear-gradient(135deg,rgba(30,15,60,0.94),rgba(8,12,30,0.94));
+  border:1px solid rgba(250,204,21,0.62); border-radius:5px;
+  font-family:ui-monospace,"SFMono-Regular",monospace; letter-spacing:.3px;
+  box-shadow:0 0 10px rgba(250,204,21,.18), inset 0 0 12px rgba(99,102,241,.12);
+  text-shadow:0 0 5px currentColor;
+}
+.dsh-danmaku-layer .dsh-danmaku-kind-tool-call { border-color:#60a5fa; color:#bfdbfe; }
+.dsh-danmaku-layer .dsh-danmaku-kind-tool-result.dsh-danmaku-tone-ok { border-color:#34d399; color:#a7f3d0; }
+.dsh-danmaku-layer .dsh-danmaku-kind-subagent { border-color:#c084fc; color:#e9d5ff; }
+.dsh-danmaku-layer .dsh-danmaku-kind-thinking { border-color:#818cf8; color:#c7d2fe; }
+.dsh-danmaku-layer .dsh-danmaku-tone-error { border-color:#fb7185; color:#fecdd3; }
+.dsh-danmaku-layer .dsh-danmaku-effect-tool-read { border-left:4px solid #38bdf8; }
+.dsh-danmaku-layer .dsh-danmaku-effect-tool-search { border-left:4px solid #a78bfa; }
+.dsh-danmaku-layer .dsh-danmaku-effect-tool-edit { border-left:4px solid #facc15; }
+.dsh-danmaku-layer .dsh-danmaku-effect-tool-shell { border-left:4px solid #4ade80; }
+.dsh-danmaku-layer .dsh-danmaku-effect-tool-web { border-left:4px solid #22d3ee; }
+.dsh-danmaku-layer .dsh-danmaku-effect-tool-git { border-left:4px solid #fb923c; }
+.dsh-danmaku-layer .dsh-danmaku-effect-tool-package { border-left:4px solid #f472b6; }
+.dsh-danmaku-layer .dsh-danmaku-effect-tool-flow { border-left:4px solid #c084fc; }`,
+    },
+    {
+      name: '🌸 樱花粉',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background: linear-gradient(135deg, rgba(255,183,197,.94), rgba(255,224,231,.94)) !important;
+  border: 1px solid rgba(244,143,177,.85) !important;
+  color: #8d3b52 !important;
+  text-shadow: none !important;
+  box-shadow: 0 2px 10px rgba(244,143,177,.35) !important;
+  border-radius: 14px !important;
+}`,
+    },
+    {
+      name: '🌊 深海玻璃',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background: rgba(8,47,73,.55) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(56,189,248,.45) !important;
+  color: #bae6fd !important;
+  box-shadow: 0 0 14px rgba(56,189,248,.25) !important;
+  border-radius: 10px !important;
+}`,
+    },
+    {
+      name: '🎮 复古终端',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background: #000a06 !important;
+  border: 1px solid #00ff66 !important;
+  color: #00ff88 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important;
+  font-size: 13px !important;
+  border-radius: 0 !important;
+  text-shadow: 0 0 6px rgba(0,255,102,.7) !important;
+  box-shadow: 0 0 10px rgba(0,255,102,.35) !important;
+}`,
+    },
+    {
+      name: '🌈 彩虹渐变',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background: linear-gradient(90deg, #ff2fb3, #7c3aed, #06b6d4) !important;
+  border: none !important;
+  color: #fff !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,.45) !important;
+  box-shadow: 0 0 16px rgba(168,85,247,.5) !important;
+  border-radius: 999px !important;
+}`,
+    },
+    {
+      name: '📄 护眼纸白',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background: #fffdf5 !important;
+  border: 1px solid #e2d9c8 !important;
+  color: #43382b !important;
+  text-shadow: none !important;
+  box-shadow: 0 2px 10px rgba(120,100,70,.28) !important;
+  border-radius: 8px !important;
+}`,
+    },
+    {
+      name: '🔥 烈焰橙',
+      css: `.dsh-danmaku-layer .dsh-danmaku-item {
+  background: linear-gradient(180deg, #451a03, #1c0a00) !important;
+  border: 1px solid #f97316 !important;
+  color: #fed7aa !important;
+  text-shadow: 0 0 6px rgba(249,115,22,.8) !important;
+  box-shadow: 0 0 12px rgba(249,115,22,.4) !important;
+  border-radius: 6px !important;
+}`,
+    },
+  ]
   function applyCustomCss(css: string): void {
     let el = document.getElementById(CUSTOM_CSS_ID) as HTMLStyleElement | null
     if (!el) {
@@ -1757,7 +1741,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     }
     el.textContent = css
   }
-
   function showSkin(): void {
     if (skinPanel) { hideSkin(); return }
     const panel = document.createElement('div')
@@ -1770,9 +1753,27 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     closeBtn.textContent = '✕'
     closeBtn.addEventListener('click', hideSkin)
     h.appendChild(title); h.appendChild(closeBtn)
+    // 内置皮肤按钮行
+    const presetRow = document.createElement('div')
+    presetRow.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;'
+    for (const preset of SKIN_PRESETS) {
+      const btn = document.createElement('button')
+      btn.className = 'dsh-danmaku-theme-toggle'
+      btn.textContent = preset.name
+      btn.style.cssText = 'font-size:10px;padding:3px 7px;'
+      btn.title = '点击应用这套皮肤（可再手动微调）'
+      btn.addEventListener('click', () => {
+        ta.value = preset.css
+        applyCustomCss(preset.css)
+        settings.update((d) => { d.customCss = preset.css })
+        for (const b of presetRow.querySelectorAll('button')) b.classList.remove('active')
+        btn.classList.add('active')
+      })
+      presetRow.appendChild(btn)
+    }
     const tip = document.createElement('div')
     tip.className = 'skin-tip'
-    tip.textContent = 'CSS 会追加到弹幕层之后。示例：.dsh-danmaku-item { font-size: 18px; }'
+    tip.textContent = '点上方按钮一键换肤，或直接改 CSS。示例：.dsh-danmaku-item { font-size: 18px; }'
     const ta = document.createElement('textarea')
     ta.spellcheck = false
     ta.value = settings.getSnapshot().customCss
@@ -1786,6 +1787,7 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     applyBtn.addEventListener('click', () => {
       applyCustomCss(ta.value)
       settings.update((d) => { d.customCss = ta.value })
+      hideSkin()
     })
     const clearBtn = document.createElement('button')
     clearBtn.className = 'dsh-danmaku-theme-toggle'
@@ -1797,15 +1799,18 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       settings.update((d) => { d.customCss = '' })
     })
     actions.appendChild(applyBtn); actions.appendChild(clearBtn)
-    panel.appendChild(h); panel.appendChild(tip); panel.appendChild(ta); panel.appendChild(actions)
+    panel.appendChild(h); panel.appendChild(presetRow); panel.appendChild(tip); panel.appendChild(ta); panel.appendChild(actions)
     document.body.appendChild(panel)
     skinPanel = panel
+    // 回显：当前 customCss 与某预设完全一致时高亮该按钮
+    const cur = settings.getSnapshot().customCss
+    SKIN_PRESETS.forEach((p, i) => {
+      if (p.css === cur) (presetRow.children[i] as HTMLElement | undefined)?.classList.add('active')
+    })
   }
-
   function hideSkin(): void {
     if (skinPanel) { skinPanel.remove(); skinPanel = null }
   }
-
   // ── 浏览器通知 ──
   function notify(title: string, body: string): void {
     if (typeof Notification === 'undefined') return
@@ -1816,7 +1821,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       } catch { /* ignore */ }
     }
   }
-
   // 首次启用时请求通知权限（通过点击控制条触发）
   let notifiedPermission = false
   ctrl.addEventListener('mouseenter', () => {
@@ -1825,14 +1829,12 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       try { Notification.requestPermission() } catch { /* ignore */ }
     }
   }, { once: true })
-
   // ── 全局快捷键 ──
   function isInputFocused(): boolean {
     const el = document.activeElement
     return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT'
       || (el as HTMLElement).isContentEditable)
   }
-
   function celebrate(effect: 'victory' | 'defeat'): void {
     const banner = document.createElement('div')
     banner.className = `dsh-danmaku-celebration ${effect}`
@@ -1853,13 +1855,10 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     }
     setTimeout(() => banner.remove(), 2400)
   }
-
   window.addEventListener('keydown', (e) => {
     if (detailPanel) return // 详情面板打开时交给面板的 handler
     if (isInputFocused()) return // 输入框中不拦截
-
     const snap = settings.getSnapshot()
-
     if (e.key === ' ' && !e.repeat && !e.shiftKey) {
       e.preventDefault()
       if (snap.enabled) {
@@ -1878,7 +1877,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       }
     }
   })
-
   // ── 弹幕渲染：实时订阅与回放共用 ──
   // force=true（回放）：跳过 开关/暂停/过滤 检查，不触发通知/庆祝/追踪
   function renderItem(item: DanmakuItem, opts?: { force?: boolean }): void {
@@ -1945,7 +1943,6 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
       : baseSpeed
     const duration = (distance / adaptiveSpeed) * 1000
     laneEnds[lane] = now + duration
-
     const el = document.createElement('div')
     el.className = 'dsh-danmaku-item'
     if (item.tone !== 'neutral') el.classList.add('dsh-danmaku-tone-' + item.tone)
@@ -1984,17 +1981,20 @@ export function mountDanmakuOverlay(bus: DanmakuBus, settings: SettingsStore): (
     items.push({ el })
     if (items.length > snap.maxActive) items.shift()?.el.remove()
   }
-
   // 初始化：Token 炉角标 + 自定义皮肤 + 控制条 UI（须在全部 let 声明之后）
   ensureStove()
   renderStove()
   applyCustomCss(settings.getSnapshot().customCss)
   settings.subscribe(refreshControlUI)
   refreshControlUI()
-
+  // Token 投影轮询：投影更新不经过弹幕事件流，定时刷新保持角标/HUD 实时
+  const tokenTimer = setInterval(() => {
+    refreshTokensFromFeed()
+    updateHud()
+  }, 1000)
   bus.subscribe((item: DanmakuItem) => renderItem(item))
-
   return () => {
+    clearInterval(tokenTimer)
     if (replayTimer) clearInterval(replayTimer)
     hideBattlefield()
     hideRadar()

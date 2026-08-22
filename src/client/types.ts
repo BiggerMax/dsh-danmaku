@@ -1,5 +1,3 @@
-import type { DanmakuTheme } from './settings'
-
 /** 一条弹幕。 */
 export interface DanmakuItem {
   /** 稳定唯一 id（去重用）。 */
@@ -14,8 +12,6 @@ export interface DanmakuItem {
   readonly time: number
   /** 耗时（ms）：turn-end / tool-result 有值时弹幕文本自动追加 ⏱ 标签。 */
   readonly durationMs?: number
-  /** 渲染时使用的主题（可选，由总线注入）。 */
-  readonly theme?: DanmakuTheme
   /** 工具语义，用于工具专属视觉效果。 */
   readonly toolName?: string
   /** 渲染特效标记。 */

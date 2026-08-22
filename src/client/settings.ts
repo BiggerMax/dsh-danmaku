@@ -18,9 +18,6 @@ export interface DanmakuFilters {
   thinking: boolean
 }
 
-/** 弹幕样式主题。 */
-export type DanmakuTheme = 'classic' | 'neon' | 'cyber' | 'cinema' | 'mono' | 'battle'
-
 /** 弹幕密度（影响轨道数量）。 */
 export type DanmakuDensity = 'sparse' | 'normal' | 'dense'
 
@@ -40,8 +37,6 @@ export interface DanmakuSettings {
   collapsed: boolean
   /** 按类型过滤：false = 不弹该类型。 */
   filters: DanmakuFilters
-  /** 弹幕样式主题。 */
-  theme: DanmakuTheme
   /** 弹幕密度。 */
   density: DanmakuDensity
   /** 弹幕显示区域。 */
@@ -66,16 +61,6 @@ export const DEFAULT_FILTERS: DanmakuFilters = {
   thinking: true,
 }
 
-export const ALL_THEMES: DanmakuTheme[] = ['classic', 'neon', 'cyber', 'cinema', 'mono', 'battle']
-export const THEME_LABEL: Record<DanmakuTheme, string> = {
-  classic: '经典',
-  neon: '霓虹',
-  cyber: '赛博朋克',
-  cinema: '电影字幕',
-  mono: '极简等宽',
-  battle: '战斗模式',
-}
-
 export const ALL_DENSITIES: DanmakuDensity[] = ['sparse', 'normal', 'dense']
 export const DENSITY_LANES: Record<DanmakuDensity, number> = {
   sparse: 3,
@@ -93,7 +78,6 @@ export const DENSITY_EMOJI: Record<DanmakuDensity, string> = {
   dense: '🔺',
 }
 
-export const DEFAULT_THEME: DanmakuTheme = 'classic'
 export const DEFAULT_DENSITY: DanmakuDensity = 'normal'
 
 export const ALL_REGIONS: DanmakuRegion[] = ['full', 'top', 'bottom']
@@ -114,7 +98,6 @@ export const DEFAULT_SETTINGS: DanmakuSettings = {
   edge: null,
   collapsed: false,
   filters: { ...DEFAULT_FILTERS },
-  theme: DEFAULT_THEME,
   density: DEFAULT_DENSITY,
   region: DEFAULT_REGION,
   direction: DEFAULT_DIRECTION,
@@ -147,14 +130,6 @@ export function createSettingsStore(): SettingsStore {
       subagent: raw.subagent != null ? !!raw.subagent : DEFAULT_FILTERS.subagent,
       thinking: raw.thinking != null ? !!raw.thinking : DEFAULT_FILTERS.thinking,
     }
-  }
-
-  function loadTheme(cur: unknown): DanmakuTheme {
-    if (!cur || typeof cur !== 'object') return DEFAULT_THEME
-    const raw = cur as Record<string, unknown>
-    const candidates: readonly DanmakuTheme[] = ['classic', 'neon', 'cyber', 'cinema', 'mono', 'battle']
-    for (const t of candidates) { if (raw.theme === t) return t }
-    return DEFAULT_THEME
   }
 
   function loadDensity(cur: unknown): DanmakuDensity {
@@ -199,7 +174,6 @@ export function createSettingsStore(): SettingsStore {
             : DEFAULT_SETTINGS.edge,
           collapsed: cur.collapsed != null ? cur.collapsed : DEFAULT_SETTINGS.collapsed,
           filters: loadFilters(cur.filters),
-          theme: loadTheme(cur),
           density: loadDensity(cur),
           region: loadRegion(cur),
           direction: loadDirection(cur),

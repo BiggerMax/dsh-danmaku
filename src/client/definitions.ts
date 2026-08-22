@@ -124,6 +124,27 @@ const danmakuUserDefinition: ConversationNodeDefinition = {
 
 // ─── 定义 2: 助手消息（最终版）──────────────────────────────────────────
 
+// Token 用量追踪：usage 挂在 assistant/message 事件上（字段 inputTokens/outputTokens，
+// 无 total），按轮累加，turn/end 时取出。以 event.seq 去重防历史回填重放导致的翻倍。
+const turnUsage = new Map<number, { total: number; input: number; output: number }>()
+const usageSeenSeqs = new Set<number>()
+
+function accumulateUsage(seq: number, turn: number, usage: unknown): void {
+  if (usageSeenSeqs.has(seq)) return
+  usageSeenSeqs.add(seq)
+  const u = usage as { inputTokens?: number; outputTokens?: number; totalTokens?: number } | undefined
+  if (!u || typeof u !== 'object') return
+  const input = typeof u.inputTokens === 'number' ? u.inputTokens : 0
+  const output = typeof u.outputTokens === 'number' ? u.outputTokens : 0
+  const total = typeof u.totalTokens === 'number' && u.totalTokens > 0 ? u.totalTokens : input + output
+  if (total <= 0) return
+  const prev = turnUsage.get(turn) ?? { total: 0, input: 0, output: 0 }
+  prev.total += total
+  prev.input += input
+  prev.output += output
+  turnUsage.set(turn, prev)
+}
+
 const danmakuAssistantDefinition: ConversationNodeDefinition = {
   kind: 'danmaku-assistant',
   target: 'danmaku',
@@ -134,6 +155,7 @@ const danmakuAssistantDefinition: ConversationNodeDefinition = {
   start: (_context, match) => {
     if (match.event.type !== 'assistant/message') throw new Error('danmaku-assistant start requires assistant/message')
     const content = match.event.data.message.content
+    accumulateUsage(match.event.seq, match.event.data.turn, (match.event.data as { usage?: unknown }).usage)
     return { text: blocksToText(content), time: match.event.time }
   },
   update: (context) => context.state,
@@ -285,15 +307,9 @@ const danmakuTurnDefinition: ConversationNodeDefinition = {
       const reason = match.event.data.reason
       const prev = context.state as { time: number } | undefined
       const durationMs = prev && prev.time != null ? match.event.time - prev.time : undefined
-      // 提取 token 用量
-      const data = match.event.data as { usage?: { totalTokens?: number; inputTokens?: number; outputTokens?: number } }
-      let tokenUsage: { total: number; input: number; output: number } | undefined
-      if (data.usage) {
-        const t = data.usage.totalTokens ?? 0
-        const i = data.usage.inputTokens ?? 0
-        const o = data.usage.outputTokens ?? 0
-        if (t > 0 || i > 0 || o > 0) tokenUsage = { total: t, input: i, output: o }
-      }
+      // Token 用量：assistant/message 阶段已按轮累加（turn/end 自身不带 usage）
+      const tokenUsage = turnUsage.get(match.event.data.turn)
+      turnUsage.delete(match.event.data.turn)
       return {
         kind: 'end' as const,
         turn: match.event.data.turn,

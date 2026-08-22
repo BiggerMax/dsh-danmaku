@@ -13,12 +13,71 @@ export const inject = ['slots', 'conversationEvents', 'conversationViews']
 
 interface ClientCtx {
   effect(fn: () => (() => void) | void, name?: string): void
+  get?(name: string): unknown
   slots: {
     inject(slot: string, factory: () => () => void): void
     register(opts: { name: string; id: string; label: () => string }, component: () => unknown): () => void
   }
   conversationEvents: { register(def: unknown): () => void }
   conversationViews: { register(def: unknown): () => void }
+}
+
+// ── Token 统计接线：当前工作区（cwd 相同的全部会话）token 总和 ──
+// 数据源：sessions.list 每行的 host 投影值 projectionValues.tokenUsage：
+//   { uncachedInputTokens, outputTokens, cacheReadTokens, cacheWriteTokens }
+// （与 dsh-client-ui-subagent 的 tokenTotal 同一算法：四桶之和）
+interface SummaryLike { cwd?: string; projectionValues?: { tokenUsage?: unknown } }
+interface SessionsLike {
+  list?: {
+    getSnapshot?(): { current?: string; byId?: Record<string, SummaryLike> }
+    subscribe?(fn: () => void): () => void
+  }
+}
+interface Totals { total: number; input: number; output: number }
+
+function totalsOfProjection(raw: unknown): Totals | null {
+  if (!raw || typeof raw !== 'object') return null
+  const v = raw as Record<string, unknown>
+  const num = (x: unknown) => (typeof x === 'number' && isFinite(x) ? x : 0)
+  const input = num(v.uncachedInputTokens) + num(v.cacheReadTokens) + num(v.cacheWriteTokens)
+  const output = num(v.outputTokens)
+  return { total: input + output, input, output }
+}
+
+function wireTokenProjection(ctx: ClientCtx, bus: DanmakuBus): void {
+  try {
+    const sessions = ctx.get?.('sessions') as SessionsLike | undefined
+    if (!sessions || !sessions.list || typeof sessions.list.getSnapshot !== 'function') return
+
+    // 聚合当前工作区：与当前会话 cwd 相同的所有会话行求和（含子 agent 会话）
+    bus.setTokenGetter(() => {
+      let snap: ReturnType<NonNullable<NonNullable<SessionsLike['list']>['getSnapshot']>>
+      try { snap = sessions.list!.getSnapshot!() } catch { return null }
+      if (!snap) return null
+      const byId = snap.byId
+      if (!byId) return null
+      const cur = snap.current ? byId[snap.current] : undefined
+      if (!cur) return null
+      const cwd = cur.cwd
+      if (!cwd) return null
+      let total = 0
+      let input = 0
+      let output = 0
+      let found = false
+      for (const id of Object.keys(byId)) {
+        const row = byId[id]
+        if (!row || (row.cwd && row.cwd !== cwd)) continue
+        const t = totalsOfProjection(row.projectionValues?.tokenUsage)
+        if (!t) continue
+        found = true
+        total += t.total
+        input += t.input
+        output += t.output
+      }
+      return found ? { total, input, output } : null
+    })
+    // 列表投影更新无需手动订阅：overlay 每秒轮询 getTokenTotals()
+  } catch { /* sessions 服务不可用时静默降级 */ }
 }
 
 export function apply(ctx: ClientCtx): void {
@@ -52,9 +111,8 @@ export function apply(ctx: ClientCtx): void {
     step('✓ danmaku 视图注册')
     const unmount = mountDanmakuOverlay(bus, settings)
     step('✓ 弹幕层挂载')
-    // 弹幕总线在推送时注入当前主题，overlay 据此渲染
-    bus.setThemeGetter(() => settings.getSnapshot().theme)
-    step('✓ 主题注入')
+    // Token 投影接线（sessions 服务不可用时静默降级）
+    wireTokenProjection(ctx, bus)
     ctx.effect(() => unmount, 'dsh-danmaku: overlay')
     step('✓ effect 注册')
     hideDiag()

@@ -1,12 +1,14 @@
-import type { DanmakuTheme } from './settings'
 import type { DanmakuItem } from './types'
 
 export type DanmakuListener = (item: DanmakuItem) => void
 
+/** Token 累计快照（来自 session 投影 tokenUsage）。 */
+export interface TokenTotals { total: number; input: number; output: number }
+
 /** 弹幕事件总线：node 定义推送 → overlay 订阅播放。 */
 export class DanmakuBus {
   private readonly listeners = new Set<DanmakuListener>()
-  private themeGetter: (() => DanmakuTheme) | null = null
+  private tokenGetter: (() => TokenTotals | null) | null = null
   // 智能分组：tool-call / tool-result 在短窗口内合并
   private readonly pending = new Map<string, { item: DanmakuItem; count: number; timer: ReturnType<typeof setTimeout> }>()
   private readonly COALESCE_MS = 400
@@ -16,13 +18,21 @@ export class DanmakuBus {
   private comboStreak = 0
   private comboTimer: ReturnType<typeof setTimeout> | null = null
 
-  setThemeGetter(fn: () => DanmakuTheme): void {
-    this.themeGetter = fn
+  /** 注入 token 投影读取器（index.tsx 从 ctx.sessions 的 tokenUsage 投影取值）。 */
+  setTokenGetter(fn: () => TokenTotals | null): void {
+    this.tokenGetter = fn
+  }
+
+  /** 当前会话 token 累计（投影不可用时返回 null）。 */
+  getTokenTotals(): TokenTotals | null {
+    try {
+      return this.tokenGetter ? this.tokenGetter() : null
+    } catch {
+      return null
+    }
   }
 
   push(item: DanmakuItem): void {
-    const themed = this.themeGetter ? { ...item, theme: this.themeGetter() } : item
-
     // 只合并 tool-call 和 tool-result
     if (item.kind === 'tool-call' || item.kind === 'tool-result') {
       const key = this.coalesceKey(item)
@@ -35,7 +45,7 @@ export class DanmakuBus {
       }
       // 新建一个 pending 槽
       const pendingItem = {
-        item: themed,
+        item,
         count: 1,
         timer: setTimeout(() => this.flushPending(key), this.COALESCE_MS),
       }
@@ -43,9 +53,9 @@ export class DanmakuBus {
       return
     }
 
-    this.record(themed)
-    for (const listener of [...this.listeners]) listener(themed)
-    this.updateCombo(themed)
+    this.record(item)
+    for (const listener of [...this.listeners]) listener(item)
+    this.updateCombo(item)
   }
 
   private updateCombo(item: DanmakuItem): void {
@@ -101,9 +111,8 @@ export class DanmakuBus {
 
   /** 系统生成弹幕（预言/观众反应等）：不参与合并，直接记录并广播。 */
   emit(item: DanmakuItem): void {
-    const themed = this.themeGetter ? { ...item, theme: this.themeGetter() } : item
-    this.record(themed)
-    for (const listener of [...this.listeners]) listener(themed)
+    this.record(item)
+    for (const listener of [...this.listeners]) listener(item)
   }
 
   subscribe(listener: DanmakuListener): () => void {
